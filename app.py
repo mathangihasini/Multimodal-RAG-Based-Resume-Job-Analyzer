@@ -42,23 +42,18 @@ st.write(
 
 @st.cache_resource
 def load_model():
-
-    return SentenceTransformer(
-        "all-MiniLM-L6-v2"
-    )
+    return SentenceTransformer("all-MiniLM-L6-v2")
 
 
 with st.spinner("Loading AI model..."):
-
     model = load_model()
 
 
 # ============================================================
-# EXTRACT PDF
+# TEXT EXTRACTION
 # ============================================================
 
 def extract_pdf(file):
-
     text = ""
 
     pdf = pymupdf.open(
@@ -67,79 +62,50 @@ def extract_pdf(file):
     )
 
     for page in pdf:
-
         text += page.get_text()
-
         text += "\n"
 
     pdf.close()
-
     return text
 
 
-# ============================================================
-# EXTRACT DOCX
-# ============================================================
-
 def extract_docx(file):
-
     text = ""
 
     document = Document(file)
 
     for paragraph in document.paragraphs:
-
         if paragraph.text.strip():
-
             text += paragraph.text
-
             text += "\n"
 
     for table in document.tables:
-
         for row in table.rows:
-
             for cell in row.cells:
-
                 text += cell.text
-
                 text += " "
-
             text += "\n"
 
     return text
 
 
-# ============================================================
-# EXTRACT TXT
-# ============================================================
-
 def extract_txt(file):
-
     return file.read().decode(
         "utf-8",
         errors="ignore"
     )
 
 
-# ============================================================
-# DOCUMENT EXTRACTION
-# ============================================================
-
 def extract_text(file):
-
     name = file.name.lower()
 
     if name.endswith(".pdf"):
-
         return extract_pdf(file)
 
     if name.endswith(".docx"):
-
         return extract_docx(file)
 
     if name.endswith(".txt"):
-
         return extract_txt(file)
 
     return ""
@@ -150,13 +116,7 @@ def extract_text(file):
 # ============================================================
 
 def clean_text(text):
-
-    text = re.sub(
-        r"\s+",
-        " ",
-        text
-    )
-
+    text = re.sub(r"\s+", " ", text)
     return text.strip()
 
 
@@ -164,14 +124,9 @@ def clean_text(text):
 # CHUNK TEXT
 # ============================================================
 
-def chunk_text(
-    text,
-    chunk_size=400,
-    overlap=80
-):
+def chunk_text(text, chunk_size=400, overlap=80):
 
     words = text.split()
-
     chunks = []
 
     start = 0
@@ -188,11 +143,9 @@ def chunk_text(
         )
 
         if chunk:
-
             chunks.append(chunk)
 
         if end >= len(words):
-
             break
 
         start = end - overlap
@@ -207,7 +160,6 @@ def chunk_text(
 def create_embeddings(chunks):
 
     if not chunks:
-
         return None
 
     return model.encode(
@@ -221,15 +173,9 @@ def create_embeddings(chunks):
 # RAG RETRIEVAL
 # ============================================================
 
-def retrieve_chunks(
-    query,
-    chunks,
-    embeddings,
-    top_k=5
-):
+def retrieve_chunks(query, chunks, embeddings, top_k=5):
 
     if embeddings is None:
-
         return []
 
     query_embedding = model.encode(
@@ -243,24 +189,16 @@ def retrieve_chunks(
         query_embedding
     )
 
-    indices = np.argsort(
-        scores
-    )[::-1]
-
+    indices = np.argsort(scores)[::-1]
     indices = indices[:top_k]
 
     results = []
 
     for index in indices:
-
-        results.append(
-            {
-                "text": chunks[index],
-                "score": float(
-                    scores[index]
-                )
-            }
-        )
+        results.append({
+            "text": chunks[index],
+            "score": float(scores[index])
+        })
 
     return results
 
@@ -270,73 +208,55 @@ def retrieve_chunks(
 # ============================================================
 
 SKILLS = [
-
     "python",
     "java",
     "c++",
     "javascript",
     "typescript",
-
     "html",
     "css",
-
     "react",
     "angular",
     "node.js",
-
     "django",
     "flask",
     "fastapi",
-
     "sql",
     "mysql",
     "postgresql",
     "mongodb",
-
     "machine learning",
     "deep learning",
     "artificial intelligence",
     "nlp",
     "computer vision",
-
     "tensorflow",
     "pytorch",
     "keras",
-
     "scikit-learn",
     "pandas",
     "numpy",
-
     "aws",
     "azure",
     "gcp",
-
     "docker",
     "kubernetes",
-
     "git",
     "github",
     "linux",
-
     "power bi",
     "tableau",
     "excel",
-
     "spark",
     "hadoop",
-
     "data analysis",
     "data science",
-
     "rest api",
     "api",
-
     "cybersecurity",
     "networking",
-
     "agile",
     "scrum"
-
 ]
 
 
@@ -347,7 +267,6 @@ SKILLS = [
 def extract_skills(text):
 
     text = text.lower()
-
     found = []
 
     for skill in SKILLS:
@@ -358,16 +277,10 @@ def extract_skills(text):
             + r"(?!\w)"
         )
 
-        if re.search(
-            pattern,
-            text
-        ):
-
+        if re.search(pattern, text):
             found.append(skill)
 
-    return sorted(
-        set(found)
-    )
+    return sorted(set(found))
 
 
 # ============================================================
@@ -377,11 +290,8 @@ def extract_skills(text):
 def extract_experience(text):
 
     patterns = [
-
         r"(\d+(?:\.\d+)?)\+?\s*years?\s+(?:of\s+)?experience",
-
         r"(\d+(?:\.\d+)?)\+?\s*years?"
-
     ]
 
     values = []
@@ -395,19 +305,12 @@ def extract_experience(text):
         )
 
         for value in matches:
-
             try:
-
-                values.append(
-                    float(value)
-                )
-
+                values.append(float(value))
             except:
-
                 pass
 
     if values:
-
         return max(values)
 
     return 0
@@ -417,10 +320,7 @@ def extract_experience(text):
 # SKILL ANALYSIS
 # ============================================================
 
-def analyze_skills(
-    resume,
-    job
-):
+def analyze_skills(resume, job):
 
     resume_skills = set(
         extract_skills(resume)
@@ -439,15 +339,11 @@ def analyze_skills(
     )
 
     if job_skills:
-
         score = (
-            len(matched)
-            /
+            len(matched) /
             len(job_skills)
         ) * 100
-
     else:
-
         score = 0
 
     return (
@@ -463,10 +359,7 @@ def analyze_skills(
 # SEMANTIC SCORE
 # ============================================================
 
-def semantic_score(
-    resume,
-    job
-):
+def semantic_score(resume, job):
 
     embeddings = model.encode(
         [resume, job],
@@ -502,24 +395,17 @@ def ai_analysis(
     missing
 ):
 
-    api_key = os.getenv(
-        "OPENAI_API_KEY"
-    )
+    api_key = os.getenv("OPENAI_API_KEY")
 
     if not api_key:
-
         return None
 
     if OpenAI is None:
-
         return None
 
     context = "\n\n".join(
-
         item["text"]
-
         for item in retrieved
-
     )
 
     client = OpenAI(
@@ -527,35 +413,24 @@ def ai_analysis(
     )
 
     prompt = f"""
-
 You are an expert technical recruiter.
 
 Analyze this resume against this job description.
 
 RESUME:
-
 {resume[:10000]}
 
-
 JOB DESCRIPTION:
-
 {job[:8000]}
 
-
 RETRIEVED RESUME EVIDENCE:
-
 {context[:6000]}
 
-
 MATCHING SKILLS:
-
 {matched}
 
-
 MISSING SKILLS:
-
 {missing}
-
 
 Give:
 
@@ -569,35 +444,27 @@ Give:
 8. Final recommendation
 
 Do not invent information.
-
 """
 
     try:
 
         response = client.chat.completions.create(
-
             model=os.getenv(
                 "OPENAI_MODEL",
                 "gpt-4o-mini"
             ),
-
             messages=[
-
                 {
                     "role": "system",
                     "content":
                     "You are an expert recruitment analyst."
                 },
-
                 {
                     "role": "user",
                     "content": prompt
                 }
-
             ],
-
             temperature=0.2
-
         )
 
         return (
@@ -608,7 +475,6 @@ Do not invent information.
         )
 
     except Exception as e:
-
         return f"AI error: {e}"
 
 
@@ -629,21 +495,10 @@ with st.sidebar:
 
     st.divider()
 
-    st.write(
-        "Supported files:"
-    )
-
-    st.write(
-        "📄 PDF"
-    )
-
-    st.write(
-        "📝 DOCX"
-    )
-
-    st.write(
-        "📃 TXT"
-    )
+    st.write("Supported files:")
+    st.write("📄 PDF")
+    st.write("📝 DOCX")
+    st.write("📃 TXT")
 
 
 # ============================================================
@@ -652,36 +507,23 @@ with st.sidebar:
 
 col1, col2 = st.columns(2)
 
-
 with col1:
 
-    st.subheader(
-        "📄 Resume"
-    )
+    st.subheader("📄 Resume")
 
     resume_file = st.file_uploader(
         "Upload Resume",
-        type=[
-            "pdf",
-            "docx",
-            "txt"
-        ]
+        type=["pdf", "docx", "txt"]
     )
 
 
 with col2:
 
-    st.subheader(
-        "💼 Job Description"
-    )
+    st.subheader("💼 Job Description")
 
     job_file = st.file_uploader(
         "Upload Job Description",
-        type=[
-            "pdf",
-            "docx",
-            "txt"
-        ]
+        type=["pdf", "docx", "txt"]
     )
 
 
@@ -696,78 +538,44 @@ if st.button(
 ):
 
     if resume_file is None:
-
-        st.warning(
-            "Please upload a resume."
-        )
-
+        st.warning("Please upload a resume.")
         st.stop()
-
 
     if job_file is None:
-
-        st.warning(
-            "Please upload a job description."
-        )
-
+        st.warning("Please upload a job description.")
         st.stop()
-
 
     # --------------------------------------------------------
     # TEXT EXTRACTION
     # --------------------------------------------------------
 
-    with st.spinner(
-        "Reading documents..."
-    ):
+    with st.spinner("Reading documents..."):
 
         resume = clean_text(
-            extract_text(
-                resume_file
-            )
+            extract_text(resume_file)
         )
 
         job = clean_text(
-            extract_text(
-                job_file
-            )
+            extract_text(job_file)
         )
-
 
     if not resume:
-
-        st.error(
-            "Could not extract resume text."
-        )
-
+        st.error("Could not extract resume text.")
         st.stop()
-
 
     if not job:
-
-        st.error(
-            "Could not extract job description."
-        )
-
+        st.error("Could not extract job description.")
         st.stop()
-
 
     # --------------------------------------------------------
     # RAG
     # --------------------------------------------------------
 
-    with st.spinner(
-        "Creating RAG embeddings..."
-    ):
+    with st.spinner("Creating RAG embeddings..."):
 
-        chunks = chunk_text(
-            resume
-        )
+        chunks = chunk_text(resume)
 
-        embeddings = create_embeddings(
-            chunks
-        )
-
+        embeddings = create_embeddings(chunks)
 
     # --------------------------------------------------------
     # RETRIEVAL
@@ -784,14 +592,11 @@ if st.button(
             top_k
         )
 
-
     # --------------------------------------------------------
     # SKILLS
     # --------------------------------------------------------
 
-    with st.spinner(
-        "Analyzing skills..."
-    ):
+    with st.spinner("Analyzing skills..."):
 
         (
             resume_skills,
@@ -803,7 +608,6 @@ if st.button(
             resume,
             job
         )
-
 
     # --------------------------------------------------------
     # SEMANTIC SCORE
@@ -818,7 +622,6 @@ if st.button(
             job
         )
 
-
     # --------------------------------------------------------
     # FINAL SCORE
     # --------------------------------------------------------
@@ -832,168 +635,105 @@ if st.button(
         2
     )
 
-
     # ========================================================
     # RESULTS
     # ========================================================
 
     st.divider()
 
-    st.header(
-        "📊 Analysis Results"
-    )
-
+    st.header("📊 Analysis Results")
 
     c1, c2, c3 = st.columns(3)
 
-
     with c1:
-
         st.metric(
             "Overall Match",
             f"{final_score}%"
         )
 
-
     with c2:
-
         st.metric(
             "Semantic Match",
             f"{semantic}%"
         )
 
-
     with c3:
-
         st.metric(
             "Skill Match",
             f"{skill_score}%"
         )
 
-
-    st.progress(
-        final_score / 100
-    )
-
+    st.progress(final_score / 100)
 
     if final_score >= 80:
-
-        st.success(
-            "🟢 Strong Match"
-        )
+        st.success("🟢 Strong Match")
 
     elif final_score >= 60:
-
-        st.warning(
-            "🟡 Moderate Match"
-        )
+        st.warning("🟡 Moderate Match")
 
     else:
-
-        st.error(
-            "🔴 Low Match"
-        )
-
+        st.error("🔴 Low Match")
 
     # ========================================================
     # SKILLS
     # ========================================================
 
-    st.header(
-        "🧠 Skill Analysis"
-    )
-
+    st.header("🧠 Skill Analysis")
 
     c1, c2 = st.columns(2)
 
-
     with c1:
 
-        st.subheader(
-            "✅ Matching Skills"
-        )
+        st.subheader("✅ Matching Skills")
 
         if matched:
 
             for skill in matched:
-
-                st.success(
-                    skill.title()
-                )
+                st.success(skill.title())
 
         else:
-
-            st.info(
-                "No matching skills found."
-            )
-
+            st.info("No matching skills found.")
 
     with c2:
 
-        st.subheader(
-            "❌ Missing Skills"
-        )
+        st.subheader("❌ Missing Skills")
 
         if missing:
 
             for skill in missing:
-
-                st.error(
-                    skill.title()
-                )
+                st.error(skill.title())
 
         else:
-
-            st.success(
-                "No major missing skills."
-            )
-
+            st.success("No major missing skills.")
 
     # ========================================================
     # EXPERIENCE
     # ========================================================
 
-    resume_exp = extract_experience(
-        resume
-    )
+    resume_exp = extract_experience(resume)
+    job_exp = extract_experience(job)
 
-    job_exp = extract_experience(
-        job
-    )
-
-
-    st.header(
-        "💼 Experience Analysis"
-    )
-
+    st.header("💼 Experience Analysis")
 
     c1, c2 = st.columns(2)
 
-
     with c1:
-
         st.metric(
             "Resume Experience",
             f"{resume_exp} years"
         )
 
-
     with c2:
-
         st.metric(
             "Required Experience",
             f"{job_exp} years"
         )
 
-
     # ========================================================
     # RAG EVIDENCE
     # ========================================================
 
-    st.header(
-        "🔎 RAG Retrieved Evidence"
-    )
-
+    st.header("🔎 RAG Retrieved Evidence")
 
     for i, item in enumerate(
         retrieved,
@@ -1005,19 +745,13 @@ if st.button(
             f"Similarity: {item['score']:.2f}"
         ):
 
-            st.write(
-                item["text"]
-            )
-
+            st.write(item["text"])
 
     # ========================================================
     # AI ANALYSIS
     # ========================================================
 
-    st.header(
-        "🤖 AI Recruiter Analysis"
-    )
-
+    st.header("🤖 AI Recruiter Analysis")
 
     with st.spinner(
         "Generating AI analysis..."
@@ -1031,12 +765,9 @@ if st.button(
             missing
         )
 
-
     if analysis:
 
-        st.markdown(
-            analysis
-        )
+        st.markdown(analysis)
 
     else:
 
@@ -1045,15 +776,11 @@ if st.button(
             "Set OPENAI_API_KEY to enable it."
         )
 
-
     # ========================================================
     # RECOMMENDATIONS
     # ========================================================
 
-    st.header(
-        "🎯 Recommendations"
-    )
-
+    st.header("🎯 Recommendations")
 
     if missing:
 
@@ -1069,15 +796,13 @@ if st.button(
             "The candidate has all detected required skills."
         )
 
-
     # ========================================================
     # DOWNLOAD REPORT
     # ========================================================
 
     report = f"""
-
 AI RESUME & JOB DESCRIPTION ANALYZER
-=====================================
+====================================
 
 Overall Match: {final_score}%
 
@@ -1085,31 +810,24 @@ Semantic Match: {semantic}%
 
 Skill Match: {skill_score}%
 
-
 MATCHING SKILLS
 ---------------
 {", ".join(matched)}
-
 
 MISSING SKILLS
 --------------
 {", ".join(missing)}
 
-
 Resume Experience:
 {resume_exp} years
-
 
 Required Experience:
 {job_exp} years
 
-
 AI ANALYSIS
 -----------
 {analysis if analysis else "Not enabled."}
-
 """
-
 
     st.download_button(
         "📥 Download Report",
