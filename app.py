@@ -1,15 +1,24 @@
 import streamlit as st
-import fitz  # PyMuPDF
-import pytesseract
-from PIL import Image
-import re
 import io
+import re
 import html
+from PIL import Image
+
+# PDF + OCR imports
+try:
+    import pymupdf
+except ImportError:
+    pymupdf = None
+
+try:
+    import pytesseract
+except ImportError:
+    pytesseract = None
 
 
-# =========================================================
+# --------------------------------------------------
 # PAGE CONFIG
-# =========================================================
+# --------------------------------------------------
 
 st.set_page_config(
     page_title="ResumeAI | Resume & Job Analyzer",
@@ -19,9 +28,9 @@ st.set_page_config(
 )
 
 
-# =========================================================
+# --------------------------------------------------
 # CUSTOM CSS
-# =========================================================
+# --------------------------------------------------
 
 st.markdown("""
 <style>
@@ -34,10 +43,24 @@ st.markdown("""
 
 .stApp {
     background:
-        radial-gradient(circle at 10% 10%, rgba(99,102,241,0.18), transparent 30%),
-        radial-gradient(circle at 90% 20%, rgba(168,85,247,0.15), transparent 30%),
-        linear-gradient(135deg, #080b16 0%, #0d1224 50%, #090d1a 100%);
-    color: #ffffff;
+        radial-gradient(
+            circle at 10% 10%,
+            rgba(99,102,241,0.18),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 90% 20%,
+            rgba(168,85,247,0.15),
+            transparent 30%
+        ),
+        linear-gradient(
+            135deg,
+            #080b16 0%,
+            #0d1224 50%,
+            #090d1a 100%
+        );
+
+    color: white;
 }
 
 .block-container {
@@ -46,18 +69,26 @@ st.markdown("""
     padding-bottom: 4rem;
 }
 
+
+/* HERO */
+
 .hero {
     padding: 55px 35px;
     border-radius: 28px;
     text-align: center;
+
     background:
         linear-gradient(
             135deg,
             rgba(99,102,241,0.28),
             rgba(168,85,247,0.18)
         );
+
     border: 1px solid rgba(255,255,255,0.12);
-    box-shadow: 0 25px 70px rgba(0,0,0,0.35);
+
+    box-shadow:
+        0 25px 70px rgba(0,0,0,0.35);
+
     margin-bottom: 30px;
 }
 
@@ -73,7 +104,15 @@ st.markdown("""
     font-size: 52px;
     font-weight: 800;
     margin: 0;
-    background: linear-gradient(90deg, #ffffff, #c4b5fd, #93c5fd);
+
+    background:
+        linear-gradient(
+            90deg,
+            #ffffff,
+            #c4b5fd,
+            #93c5fd
+        );
+
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -92,26 +131,44 @@ st.markdown("""
     line-height: 1.8;
 }
 
+
+/* SECTION */
+
 .section-title {
     font-size: 27px;
     font-weight: 800;
     margin: 35px 0 20px;
 }
 
+
+/* FEATURE CARDS */
+
 .feature-card {
     padding: 25px;
     min-height: 180px;
+
     border-radius: 22px;
+
     background: rgba(255,255,255,0.055);
-    border: 1px solid rgba(255,255,255,0.10);
-    box-shadow: 0 12px 35px rgba(0,0,0,0.20);
+
+    border:
+        1px solid
+        rgba(255,255,255,0.10);
+
+    box-shadow:
+        0 12px 35px
+        rgba(0,0,0,0.20);
+
     margin-bottom: 15px;
+
     transition: 0.3s;
 }
 
 .feature-card:hover {
     transform: translateY(-4px);
-    border-color: rgba(165,180,252,0.45);
+
+    border-color:
+        rgba(165,180,252,0.45);
 }
 
 .feature-icon {
@@ -122,7 +179,7 @@ st.markdown("""
 .feature-title {
     font-size: 18px;
     font-weight: 700;
-    color: #ffffff;
+    color: white;
     margin-bottom: 8px;
 }
 
@@ -132,21 +189,44 @@ st.markdown("""
     font-size: 14px;
 }
 
+
+/* GLASS */
+
 .glass-card {
     padding: 28px;
+
     border-radius: 22px;
-    background: rgba(255,255,255,0.055);
-    border: 1px solid rgba(255,255,255,0.10);
-    box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+
+    background:
+        rgba(255,255,255,0.055);
+
+    border:
+        1px solid
+        rgba(255,255,255,0.10);
+
+    box-shadow:
+        0 15px 40px
+        rgba(0,0,0,0.25);
+
     margin-bottom: 20px;
 }
 
+
+/* METRICS */
+
 .metric-card {
     padding: 25px;
+
     text-align: center;
+
     border-radius: 20px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.10);
+
+    background:
+        rgba(255,255,255,0.06);
+
+    border:
+        1px solid
+        rgba(255,255,255,0.10);
 }
 
 .metric-number {
@@ -160,33 +240,65 @@ st.markdown("""
     margin-top: 5px;
 }
 
+
+/* SKILLS */
+
 .skill {
     display: inline-block;
+
     padding: 7px 13px;
+
     margin: 4px;
+
     border-radius: 20px;
-    background: rgba(99,102,241,0.18);
-    border: 1px solid rgba(129,140,248,0.35);
+
+    background:
+        rgba(99,102,241,0.18);
+
+    border:
+        1px solid
+        rgba(129,140,248,0.35);
+
     color: #c7d2fe;
+
     font-size: 13px;
 }
 
 .missing-skill {
     display: inline-block;
+
     padding: 7px 13px;
+
     margin: 4px;
+
     border-radius: 20px;
-    background: rgba(239,68,68,0.12);
-    border: 1px solid rgba(248,113,113,0.3);
+
+    background:
+        rgba(239,68,68,0.12);
+
+    border:
+        1px solid
+        rgba(248,113,113,0.3);
+
     color: #fecaca;
+
     font-size: 13px;
 }
 
+
+/* SUGGESTIONS */
+
 .suggestion {
     padding: 18px;
+
     border-radius: 16px;
-    background: rgba(255,255,255,0.045);
-    border-left: 4px solid #818cf8;
+
+    background:
+        rgba(255,255,255,0.045);
+
+    border-left:
+        4px solid #818cf8;
+
     margin-bottom: 12px;
 }
 
@@ -201,39 +313,75 @@ st.markdown("""
     line-height: 1.6;
 }
 
+
+/* BUTTON */
+
 div.stButton > button {
     width: 100%;
+
     border-radius: 14px;
+
     padding: 14px;
+
     font-size: 16px;
+
     font-weight: 700;
+
     border: none;
-    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+
+    background:
+        linear-gradient(
+            90deg,
+            #6366f1,
+            #8b5cf6
+        );
+
     color: white;
-    box-shadow: 0 10px 25px rgba(99,102,241,0.25);
+
+    box-shadow:
+        0 10px 25px
+        rgba(99,102,241,0.25);
 }
 
 div.stButton > button:hover {
-    background: linear-gradient(90deg, #4f46e5, #7c3aed);
+    background:
+        linear-gradient(
+            90deg,
+            #4f46e5,
+            #7c3aed
+        );
+
     color: white;
 }
 
-textarea {
-    border-radius: 15px !important;
-}
+
+/* FILE UPLOADER */
 
 [data-testid="stFileUploader"] {
-    background: rgba(255,255,255,0.035);
+    background:
+        rgba(255,255,255,0.035);
+
     border-radius: 18px;
+
     padding: 10px;
-    border: 1px dashed rgba(255,255,255,0.2);
+
+    border:
+        1px dashed
+        rgba(255,255,255,0.2);
 }
+
+
+/* FOOTER */
 
 .footer {
     text-align: center;
+
     margin-top: 50px;
+
     padding: 25px;
+
     color: #64748b;
+
     font-size: 13px;
 }
 
@@ -241,9 +389,9 @@ textarea {
 """, unsafe_allow_html=True)
 
 
-# =========================================================
+# --------------------------------------------------
 # SKILLS DATABASE
-# =========================================================
+# --------------------------------------------------
 
 SKILLS = [
     "python",
@@ -304,46 +452,75 @@ SKILLS = [
 ]
 
 
-# =========================================================
-# RESUME EXTRACTION
-# =========================================================
+# --------------------------------------------------
+# PDF TEXT EXTRACTION
+# --------------------------------------------------
 
-def extract_text_from_pdf(pdf_bytes):
+def extract_pdf_text(pdf_bytes):
+
+    if pymupdf is None:
+        return "", "PyMuPDF is not installed"
 
     text = ""
-    extraction_method = "PDF Text Extraction"
 
     try:
-        document = fitz.open(stream=pdf_bytes, filetype="pdf")
 
-        # -------------------------------------------------
-        # First attempt: normal PDF text extraction
-        # -------------------------------------------------
+        document = pymupdf.open(
+            stream=pdf_bytes,
+            filetype="pdf"
+        )
 
         for page in document:
+
             page_text = page.get_text("text")
+
             if page_text:
                 text += page_text + "\n"
 
-        # If enough text exists, return it
-        if len(text.strip()) >= 100:
+        text = text.strip()
+
+        if len(text) >= 100:
+
             document.close()
-            return text.strip(), extraction_method
 
-        # -------------------------------------------------
-        # Second attempt: OCR for scanned/image PDFs
-        # -------------------------------------------------
+            return text, "PDF Text Extraction"
 
-        text = ""
-        extraction_method = "OCR"
+        document.close()
+
+        return "", "OCR Required"
+
+    except Exception as e:
+
+        return "", f"PDF Error: {str(e)}"
+
+
+# --------------------------------------------------
+# OCR EXTRACTION
+# --------------------------------------------------
+
+def extract_ocr_text(pdf_bytes):
+
+    if pymupdf is None:
+        return "", "PyMuPDF is not installed"
+
+    if pytesseract is None:
+        return "", "Tesseract OCR is not installed"
+
+    text = ""
+
+    try:
+
+        document = pymupdf.open(
+            stream=pdf_bytes,
+            filetype="pdf"
+        )
 
         for page_number in range(len(document)):
 
             page = document.load_page(page_number)
 
-            # Render page at higher resolution
             pix = page.get_pixmap(
-                matrix=fitz.Matrix(2.0, 2.0),
+                matrix=pymupdf.Matrix(2, 2),
                 alpha=False
             )
 
@@ -362,18 +539,42 @@ def extract_text_from_pdf(pdf_bytes):
 
         document.close()
 
-        if len(text.strip()) < 20:
-            return "", extraction_method
+        text = text.strip()
 
-        return text.strip(), extraction_method
+        if len(text) < 20:
+            return "", "OCR could not detect readable text"
+
+        return text, "OCR"
 
     except Exception as e:
-        return "", f"Error: {str(e)}"
+
+        return "", f"OCR Error: {str(e)}"
 
 
-# =========================================================
+# --------------------------------------------------
+# MAIN PDF PROCESSOR
+# --------------------------------------------------
+
+def process_resume(pdf_bytes):
+
+    # First try normal PDF text
+    text, method = extract_pdf_text(pdf_bytes)
+
+    if text:
+        return text, method
+
+    # If normal extraction fails, try OCR
+    ocr_text, ocr_method = extract_ocr_text(pdf_bytes)
+
+    if ocr_text:
+        return ocr_text, ocr_method
+
+    return "", ocr_method
+
+
+# --------------------------------------------------
 # SKILL EXTRACTION
-# =========================================================
+# --------------------------------------------------
 
 def extract_skills(text):
 
@@ -383,21 +584,29 @@ def extract_skills(text):
 
     for skill in SKILLS:
 
-        pattern = r"(?<!\w)" + re.escape(skill.lower()) + r"(?!\w)"
+        pattern = (
+            r"(?<!\w)"
+            + re.escape(skill.lower())
+            + r"(?!\w)"
+        )
 
         if re.search(pattern, text_lower):
+
             found.append(skill)
 
     return sorted(set(found))
 
 
-# =========================================================
-# JOB KEYWORDS
-# =========================================================
+# --------------------------------------------------
+# KEYWORD EXTRACTION
+# --------------------------------------------------
 
 def extract_keywords(text):
 
-    words = re.findall(r"\b[a-zA-Z]{4,}\b", text.lower())
+    words = re.findall(
+        r"\b[a-zA-Z]{4,}\b",
+        text.lower()
+    )
 
     stopwords = {
         "this",
@@ -422,53 +631,93 @@ def extract_keywords(text):
         "knowledge",
         "should",
         "must",
-        "looking"
+        "looking",
+        "which",
+        "where",
+        "when",
+        "while",
+        "there",
+        "these",
+        "those"
     }
 
-    return set(
-        word for word in words
+    return {
+        word
+        for word in words
         if word not in stopwords
+    }
+
+
+# --------------------------------------------------
+# SCORE CALCULATION
+# --------------------------------------------------
+
+def calculate_scores(
+    resume_text,
+    job_description
+):
+
+    resume_skills = extract_skills(
+        resume_text
     )
 
-
-# =========================================================
-# ATS SCORE
-# =========================================================
-
-def calculate_scores(resume_text, job_description):
-
-    resume_skills = extract_skills(resume_text)
-    job_skills = extract_skills(job_description)
+    job_skills = extract_skills(
+        job_description
+    )
 
     matched_skills = sorted(
-        set(resume_skills) & set(job_skills)
+        set(resume_skills)
+        &
+        set(job_skills)
     )
 
     missing_skills = sorted(
-        set(job_skills) - set(resume_skills)
+        set(job_skills)
+        -
+        set(resume_skills)
     )
 
-    if len(job_skills) > 0:
+    if job_skills:
+
         skill_score = (
-            len(matched_skills) /
+            len(matched_skills)
+            /
             len(job_skills)
         ) * 100
+
     else:
+
         skill_score = 0
 
-    resume_keywords = extract_keywords(resume_text)
-    job_keywords = extract_keywords(job_description)
 
-    if len(job_keywords) > 0:
+    resume_keywords = extract_keywords(
+        resume_text
+    )
+
+    job_keywords = extract_keywords(
+        job_description
+    )
+
+    if job_keywords:
+
         keyword_score = (
-            len(resume_keywords & job_keywords) /
+            len(
+                resume_keywords
+                &
+                job_keywords
+            )
+            /
             len(job_keywords)
         ) * 100
+
     else:
+
         keyword_score = 0
 
+
     final_score = (
-        skill_score * 0.70 +
+        skill_score * 0.70
+        +
         keyword_score * 0.30
     )
 
@@ -481,15 +730,16 @@ def calculate_scores(resume_text, job_description):
     )
 
 
-# =========================================================
+# --------------------------------------------------
 # PROFILE DETECTION
-# =========================================================
+# --------------------------------------------------
 
 def detect_profile(skills):
 
     skill_set = set(skills)
 
     profiles = []
+
 
     if skill_set & {
         "python",
@@ -500,7 +750,11 @@ def detect_profile(skills):
         "power bi",
         "tableau"
     }:
-        profiles.append("Data Analyst")
+
+        profiles.append(
+            "Data Analyst"
+        )
+
 
     if skill_set & {
         "python",
@@ -510,7 +764,11 @@ def detect_profile(skills):
         "pytorch",
         "deep learning"
     }:
-        profiles.append("Machine Learning / AI")
+
+        profiles.append(
+            "Machine Learning / AI"
+        )
+
 
     if skill_set & {
         "html",
@@ -520,7 +778,11 @@ def detect_profile(skills):
         "node.js",
         "nodejs"
     }:
-        profiles.append("Web Developer")
+
+        profiles.append(
+            "Web Developer"
+        )
+
 
     if skill_set & {
         "java",
@@ -529,7 +791,11 @@ def detect_profile(skills):
         "python",
         "sql"
     }:
-        profiles.append("Software Developer")
+
+        profiles.append(
+            "Software Developer"
+        )
+
 
     if skill_set & {
         "rag",
@@ -537,26 +803,34 @@ def detect_profile(skills):
         "generative ai",
         "nlp"
     }:
-        profiles.append("Generative AI / NLP")
+
+        profiles.append(
+            "Generative AI / NLP"
+        )
+
 
     if not profiles:
-        profiles.append("General Technology Profile")
+
+        profiles.append(
+            "General Technology Profile"
+        )
+
 
     return profiles
 
 
-# =========================================================
-# SUGGESTIONS
-# =========================================================
+# --------------------------------------------------
+# SMART SUGGESTIONS
+# --------------------------------------------------
 
 def generate_suggestions(
     resume_text,
     job_description,
-    missing_skills,
-    resume_skills
+    missing_skills
 ):
 
     suggestions = []
+
 
     if missing_skills:
 
@@ -565,23 +839,35 @@ def generate_suggestions(
         )
 
         suggestions.append({
-            "title": "Add Missing Job Skills",
-            "text": (
-                f"Consider adding relevant skills from the job description "
-                f"if you genuinely have experience with them: {skills_text}."
-            )
+            "title":
+                "Add Missing Job Skills",
+
+            "text":
+                (
+                    "Consider adding relevant "
+                    "skills from the job description "
+                    "if you genuinely have experience "
+                    f"with them: {skills_text}."
+                )
         })
+
 
     if len(resume_text) < 1000:
 
         suggestions.append({
-            "title": "Add More Resume Content",
-            "text": (
-                "Your extracted resume content is relatively short. "
-                "Consider adding stronger project descriptions, achievements, "
-                "certifications, and relevant technical skills."
-            )
+            "title":
+                "Add More Resume Content",
+
+            "text":
+                (
+                    "Your extracted resume content "
+                    "is relatively short. Consider "
+                    "adding stronger project descriptions, "
+                    "achievements, certifications, "
+                    "and relevant technical skills."
+                )
         })
+
 
     if not re.search(
         r"summary|objective|profile",
@@ -590,12 +876,17 @@ def generate_suggestions(
     ):
 
         suggestions.append({
-            "title": "Add a Professional Summary",
-            "text": (
-                "Add a short professional summary describing your technical "
-                "skills, education, projects, and career interests."
-            )
+            "title":
+                "Add a Professional Summary",
+
+            "text":
+                (
+                    "Add a short professional summary "
+                    "describing your technical skills, "
+                    "education, projects, and career interests."
+                )
         })
+
 
     if not re.search(
         r"project|projects",
@@ -604,12 +895,17 @@ def generate_suggestions(
     ):
 
         suggestions.append({
-            "title": "Add Projects",
-            "text": (
-                "Include 2–3 relevant academic or personal projects with "
-                "technologies used and measurable outcomes."
-            )
+            "title":
+                "Add Projects",
+
+            "text":
+                (
+                    "Include 2–3 relevant academic or "
+                    "personal projects with technologies "
+                    "used and measurable outcomes."
+                )
         })
+
 
     if not re.search(
         r"github|portfolio|linkedin",
@@ -618,12 +914,17 @@ def generate_suggestions(
     ):
 
         suggestions.append({
-            "title": "Add Professional Links",
-            "text": (
-                "Consider adding your GitHub, LinkedIn, or portfolio link "
-                "if you have one."
-            )
+            "title":
+                "Add Professional Links",
+
+            "text":
+                (
+                    "Consider adding your GitHub, "
+                    "LinkedIn, or portfolio link "
+                    "if you have one."
+                )
         })
+
 
     if not re.search(
         r"certification|certificate",
@@ -632,30 +933,40 @@ def generate_suggestions(
     ):
 
         suggestions.append({
-            "title": "Add Certifications",
-            "text": (
-                "Add relevant certifications or completed courses that "
-                "support your target job role."
-            )
+            "title":
+                "Add Certifications",
+
+            "text":
+                (
+                    "Add relevant certifications or "
+                    "completed courses that support "
+                    "your target job role."
+                )
         })
+
 
     if not suggestions:
 
         suggestions.append({
-            "title": "Good Foundation",
-            "text": (
-                "Your resume contains relevant information. Continue "
-                "improving it with measurable achievements and job-specific "
-                "keywords."
-            )
+            "title":
+                "Good Foundation",
+
+            "text":
+                (
+                    "Your resume contains relevant "
+                    "information. Continue improving "
+                    "it with measurable achievements "
+                    "and job-specific keywords."
+                )
         })
+
 
     return suggestions
 
 
-# =========================================================
+# --------------------------------------------------
 # HERO
-# =========================================================
+# --------------------------------------------------
 
 st.markdown("""
 <div class="hero">
@@ -664,9 +975,13 @@ st.markdown("""
         ✦ AI-POWERED CAREER INTELLIGENCE
     </div>
 
-    <h1>🚀 ResumeAI</h1>
+    <h1>
+        🚀 ResumeAI
+    </h1>
 
-    <h2>Multimodal RAG-Based Resume & Job Analyzer</h2>
+    <h2>
+        Multimodal RAG-Based Resume & Job Analyzer
+    </h2>
 
     <p>
         Analyze your resume, understand your career profile,
@@ -678,46 +993,60 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# =========================================================
+# --------------------------------------------------
 # FEATURES
-# =========================================================
+# --------------------------------------------------
 
 st.markdown(
-    '<div class="section-title">✨ Powerful Resume Intelligence</div>',
+    '<div class="section-title">'
+    '✨ Powerful Resume Intelligence'
+    '</div>',
     unsafe_allow_html=True
 )
 
+
 features = [
+
     (
         "📄",
         "Resume Parsing",
         "Extract resume information automatically from your uploaded document."
     ),
+
     (
         "🎯",
         "Resume Scoring",
         "Evaluate resume quality and ATS compatibility instantly."
     ),
+
     (
         "🧠",
         "Profile Analysis",
         "Detect your career profile and identify suitable job roles."
     ),
+
     (
         "📊",
         "Skill Analytics",
         "Discover your technical and professional skills."
     ),
+
     (
         "💡",
         "Smart Suggestions",
         "Get personalized recommendations to improve your resume."
     )
+
 ]
+
 
 cols = st.columns(5)
 
-for col, feature in zip(cols, features):
+
+for col, feature in zip(
+    cols,
+    features
+):
 
     with col:
 
@@ -743,81 +1072,115 @@ for col, feature in zip(cols, features):
         )
 
 
-# =========================================================
+# --------------------------------------------------
 # INPUT SECTION
-# =========================================================
+# --------------------------------------------------
 
 st.markdown(
-    '<div class="section-title">🔍 Start Your Resume Analysis</div>',
+    '<div class="section-title">'
+    '🔍 Start Your Resume Analysis'
+    '</div>',
     unsafe_allow_html=True
 )
 
-col1, col2 = st.columns([1, 1])
+
+col1, col2 = st.columns(
+    [1, 1]
+)
+
+
+# RESUME UPLOAD
 
 with col1:
 
     st.markdown(
         """
         <div class="glass-card">
-            <h3>📄 Upload Your Resume</h3>
-            <p style="color:#94a3b8;">
-                Upload a PDF resume to extract and analyze your information.
-            </p>
+
+        <h3>
+            📄 Upload Your Resume
+        </h3>
+
+        <p style="color:#94a3b8;">
+            Upload a PDF resume to extract
+            and analyze your information.
+        </p>
         """,
         unsafe_allow_html=True
     )
 
+
     uploaded_file = st.file_uploader(
         "Choose your resume PDF",
         type=["pdf"],
-        help="Both normal text PDFs and scanned/image PDFs are supported."
+        help=(
+            "Both normal text PDFs and "
+            "scanned/image PDFs are supported."
+        )
     )
 
-    st.markdown("</div>", unsafe_allow_html=True)
 
+    st.markdown(
+        "</div>",
+        unsafe_allow_html=True
+    )
+
+
+# JOB DESCRIPTION
 
 with col2:
 
     st.markdown(
         """
         <div class="glass-card">
-            <h3>💼 Job Description</h3>
-            <p style="color:#94a3b8;">
-                Paste the job description you want to compare with your resume.
-            </p>
+
+        <h3>
+            💼 Job Description
+        </h3>
+
+        <p style="color:#94a3b8;">
+            Paste the job description you want
+            to compare with your resume.
+        </p>
         """,
         unsafe_allow_html=True
     )
+
 
     job_description = st.text_area(
         "Paste Job Description",
         height=250,
         placeholder=(
             "Example:\n\n"
-            "We are looking for a Data Analyst Intern with "
-            "knowledge of Python, SQL, Pandas, NumPy, Excel, "
-            "Power BI and data visualization..."
+            "We are looking for a Data Analyst Intern "
+            "with knowledge of Python, SQL, Pandas, "
+            "NumPy, Excel, Power BI and data visualization..."
         ),
         label_visibility="collapsed"
     )
 
-    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown(
+        "</div>",
+        unsafe_allow_html=True
+    )
 
 
-# =========================================================
+# --------------------------------------------------
 # ANALYZE BUTTON
-# =========================================================
+# --------------------------------------------------
 
 st.markdown("<br>", unsafe_allow_html=True)
+
 
 analyze = st.button(
     "🚀 Analyze My Resume"
 )
 
 
-# =========================================================
+# --------------------------------------------------
 # ANALYSIS
-# =========================================================
+# --------------------------------------------------
 
 if analyze:
 
@@ -826,14 +1189,18 @@ if analyze:
         st.error(
             "⚠️ Please upload your resume PDF first."
         )
+
         st.stop()
+
 
     if not job_description.strip():
 
         st.error(
             "⚠️ Please paste a job description first."
         )
+
         st.stop()
+
 
     with st.spinner(
         "🔎 Reading and analyzing your resume..."
@@ -841,26 +1208,32 @@ if analyze:
 
         pdf_bytes = uploaded_file.getvalue()
 
-        resume_text, extraction_method = extract_text_from_pdf(
-            pdf_bytes
+        resume_text, extraction_method = (
+            process_resume(pdf_bytes)
         )
+
+
+    # EXTRACTION ERROR
 
     if not resume_text:
 
         st.error(
-            "❌ Unable to extract text from this PDF. "
-            "Please try another PDF or a clearer scanned PDF."
+            "❌ Unable to extract text from this PDF."
+        )
+
+        st.warning(
+            f"Reason: {extraction_method}"
         )
 
         st.info(
-            "Tip: Make sure the PDF pages contain readable text/images."
+            "Please upload a clear PDF resume. "
+            "Scanned PDFs require OCR support."
         )
 
         st.stop()
 
-    # -----------------------------------------------------
-    # Calculate results
-    # -----------------------------------------------------
+
+    # SCORE
 
     (
         final_score,
@@ -873,39 +1246,48 @@ if analyze:
         job_description
     )
 
+
     resume_skills = extract_skills(
         resume_text
     )
+
 
     profiles = detect_profile(
         resume_skills
     )
 
+
     suggestions = generate_suggestions(
         resume_text,
         job_description,
-        missing_skills,
-        resume_skills
+        missing_skills
     )
 
-    # -----------------------------------------------------
-    # Success message
-    # -----------------------------------------------------
+
+    # SUCCESS
 
     st.success(
-        f"✅ Resume successfully analyzed using {extraction_method}."
+        f"✅ Resume successfully analyzed using "
+        f"{extraction_method}."
     )
 
-    # -----------------------------------------------------
-    # ATS Score
-    # -----------------------------------------------------
+
+    # --------------------------------------------------
+    # RESULTS
+    # --------------------------------------------------
 
     st.markdown(
-        '<div class="section-title">🎯 Resume Analysis Results</div>',
+        '<div class="section-title">'
+        '🎯 Resume Analysis Results'
+        '</div>',
         unsafe_allow_html=True
     )
 
-    score_col, skill_col, keyword_col = st.columns(3)
+
+    score_col, skill_col, keyword_col = (
+        st.columns(3)
+    )
+
 
     with score_col:
 
@@ -926,6 +1308,7 @@ if analyze:
             unsafe_allow_html=True
         )
 
+
     with skill_col:
 
         st.markdown(
@@ -944,6 +1327,7 @@ if analyze:
             """,
             unsafe_allow_html=True
         )
+
 
     with keyword_col:
 
@@ -964,26 +1348,37 @@ if analyze:
             unsafe_allow_html=True
         )
 
-    # -----------------------------------------------------
-    # Skills
-    # -----------------------------------------------------
+
+    # --------------------------------------------------
+    # SKILL COMPARISON
+    # --------------------------------------------------
 
     st.markdown(
-        '<div class="section-title">🛠️ Skill Comparison</div>',
+        '<div class="section-title">'
+        '🛠️ Skill Comparison'
+        '</div>',
         unsafe_allow_html=True
     )
 
-    skill_col1, skill_col2 = st.columns(2)
+
+    skill_col1, skill_col2 = (
+        st.columns(2)
+    )
+
 
     with skill_col1:
 
         st.markdown(
             """
             <div class="glass-card">
-                <h3>✅ Matched Skills</h3>
+
+            <h3>
+                ✅ Matched Skills
+            </h3>
             """,
             unsafe_allow_html=True
         )
+
 
         if matched_skills:
 
@@ -992,9 +1387,9 @@ if analyze:
             for skill in matched_skills:
 
                 skills_html += (
-                    f'<span class="skill">'
+                    '<span class="skill">'
                     f'{html.escape(skill.title())}'
-                    f'</span>'
+                    '</span>'
                 )
 
             st.markdown(
@@ -1008,17 +1403,26 @@ if analyze:
                 "No matching skills detected."
             )
 
-        st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown(
+            "</div>",
+            unsafe_allow_html=True
+        )
+
 
     with skill_col2:
 
         st.markdown(
             """
             <div class="glass-card">
-                <h3>⚠️ Missing / Recommended Skills</h3>
+
+            <h3>
+                ⚠️ Missing / Recommended Skills
+            </h3>
             """,
             unsafe_allow_html=True
         )
+
 
         if missing_skills:
 
@@ -1027,9 +1431,9 @@ if analyze:
             for skill in missing_skills:
 
                 skills_html += (
-                    f'<span class="missing-skill">'
+                    '<span class="missing-skill">'
                     f'{html.escape(skill.title())}'
-                    f'</span>'
+                    '</span>'
                 )
 
             st.markdown(
@@ -1043,37 +1447,51 @@ if analyze:
                 "🎉 No major missing skills detected."
             )
 
-        st.markdown("</div>", unsafe_allow_html=True)
 
-    # -----------------------------------------------------
-    # Profile Analysis
-    # -----------------------------------------------------
+        st.markdown(
+            "</div>",
+            unsafe_allow_html=True
+        )
+
+
+    # --------------------------------------------------
+    # PROFILE ANALYSIS
+    # --------------------------------------------------
 
     st.markdown(
-        '<div class="section-title">🧠 Profile Analysis</div>',
+        '<div class="section-title">'
+        '🧠 Profile Analysis'
+        '</div>',
         unsafe_allow_html=True
     )
+
 
     st.markdown(
         '<div class="glass-card">',
         unsafe_allow_html=True
     )
 
+
     st.write(
         "**Detected Career Profiles:**"
     )
 
+
     for profile in profiles:
 
         st.markdown(
-            f'<span class="skill">{html.escape(profile)}</span>',
+            f'<span class="skill">'
+            f'{html.escape(profile)}'
+            f'</span>',
             unsafe_allow_html=True
         )
+
 
     st.markdown(
         "<br><br>**Skills Detected From Resume:**",
         unsafe_allow_html=True
     )
+
 
     if resume_skills:
 
@@ -1082,9 +1500,9 @@ if analyze:
         for skill in resume_skills:
 
             skills_html += (
-                f'<span class="skill">'
+                '<span class="skill">'
                 f'{html.escape(skill.title())}'
-                f'</span>'
+                '</span>'
             )
 
         st.markdown(
@@ -1098,16 +1516,24 @@ if analyze:
             "No predefined skills detected."
         )
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # -----------------------------------------------------
-    # Suggestions
-    # -----------------------------------------------------
 
     st.markdown(
-        '<div class="section-title">💡 Smart Suggestions</div>',
+        "</div>",
         unsafe_allow_html=True
     )
+
+
+    # --------------------------------------------------
+    # SMART SUGGESTIONS
+    # --------------------------------------------------
+
+    st.markdown(
+        '<div class="section-title">'
+        '💡 Smart Suggestions'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
 
     for suggestion in suggestions:
 
@@ -1116,11 +1542,15 @@ if analyze:
             <div class="suggestion">
 
                 <div class="suggestion-title">
-                    {html.escape(suggestion["title"])}
+                    {html.escape(
+                        suggestion["title"]
+                    )}
                 </div>
 
                 <div class="suggestion-text">
-                    {html.escape(suggestion["text"])}
+                    {html.escape(
+                        suggestion["text"]
+                    )}
                 </div>
 
             </div>
@@ -1128,16 +1558,23 @@ if analyze:
             unsafe_allow_html=True
         )
 
-    # -----------------------------------------------------
-    # Score Breakdown
-    # -----------------------------------------------------
+
+    # --------------------------------------------------
+    # SCORE BREAKDOWN
+    # --------------------------------------------------
 
     st.markdown(
-        '<div class="section-title">📊 Score Breakdown</div>',
+        '<div class="section-title">'
+        '📊 Score Breakdown'
+        '</div>',
         unsafe_allow_html=True
     )
 
-    breakdown_col1, breakdown_col2 = st.columns(2)
+
+    breakdown_col1, breakdown_col2 = (
+        st.columns(2)
+    )
+
 
     with breakdown_col1:
 
@@ -1146,17 +1583,26 @@ if analyze:
             unsafe_allow_html=True
         )
 
-        st.write("**Skill Match — 70% Weight**")
+        st.write(
+            "**Skill Match — 70% Weight**"
+        )
 
         st.progress(
-            min(skill_score / 100, 1.0)
+            min(
+                skill_score / 100,
+                1.0
+            )
         )
 
         st.write(
             f"{skill_score}% skill compatibility"
         )
 
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown(
+            "</div>",
+            unsafe_allow_html=True
+        )
+
 
     with breakdown_col2:
 
@@ -1165,26 +1611,38 @@ if analyze:
             unsafe_allow_html=True
         )
 
-        st.write("**Keyword Match — 30% Weight**")
+        st.write(
+            "**Keyword Match — 30% Weight**"
+        )
 
         st.progress(
-            min(keyword_score / 100, 1.0)
+            min(
+                keyword_score / 100,
+                1.0
+            )
         )
 
         st.write(
             f"{keyword_score}% keyword compatibility"
         )
 
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown(
+            "</div>",
+            unsafe_allow_html=True
+        )
 
-    # -----------------------------------------------------
-    # Extracted Resume Text
-    # -----------------------------------------------------
+
+    # --------------------------------------------------
+    # EXTRACTED TEXT
+    # --------------------------------------------------
 
     st.markdown(
-        '<div class="section-title">📄 Extracted Resume Text</div>',
+        '<div class="section-title">'
+        '📄 Extracted Resume Text'
+        '</div>',
         unsafe_allow_html=True
     )
+
 
     with st.expander(
         "View extracted resume text"
@@ -1197,9 +1655,10 @@ if analyze:
             label_visibility="collapsed"
         )
 
-    # -----------------------------------------------------
-    # Download Report
-    # -----------------------------------------------------
+
+    # --------------------------------------------------
+    # DOWNLOAD REPORT
+    # --------------------------------------------------
 
     report = f"""
 RESUMEAI - RESUME & JOB ANALYZER
@@ -1240,6 +1699,7 @@ SUGGESTIONS
 -----------
 """
 
+
     for suggestion in suggestions:
 
         report += (
@@ -1247,13 +1707,16 @@ SUGGESTIONS
             f"{suggestion['text']}\n"
         )
 
+
     report += """
 
 EXTRACTED RESUME TEXT
 ---------------------
 """
 
+
     report += resume_text
+
 
     st.download_button(
         label="⬇️ Download Analysis Report",
@@ -1263,16 +1726,21 @@ EXTRACTED RESUME TEXT
     )
 
 
-# =========================================================
+# --------------------------------------------------
 # FOOTER
-# =========================================================
+# --------------------------------------------------
 
 st.markdown(
     """
     <div class="footer">
-        🚀 ResumeAI · Multimodal Resume & Job Intelligence
+
+        🚀 ResumeAI ·
+        Multimodal Resume & Job Intelligence
+
         <br>
+
         Built for smarter career preparation.
+
     </div>
     """,
     unsafe_allow_html=True
