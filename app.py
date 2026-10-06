@@ -1,12 +1,11 @@
 import streamlit as st
 import io
 import re
-import html
 from PIL import Image
 
-# ============================================================
+# =========================================================
 # OPTIONAL LIBRARIES
-# ============================================================
+# =========================================================
 
 try:
     import pymupdf
@@ -19,9 +18,9 @@ except ImportError:
     pytesseract = None
 
 
-# ============================================================
+# =========================================================
 # PAGE CONFIG
-# ============================================================
+# =========================================================
 
 st.set_page_config(
     page_title="ResumeAI | Career Intelligence",
@@ -31,778 +30,432 @@ st.set_page_config(
 )
 
 
-# ============================================================
-# CUSTOM CSS
-# ============================================================
-
-st.markdown("""
-<style>
-
-/* =========================
-   GLOBAL
-========================= */
-
-.stApp {
-    background:
-        radial-gradient(circle at 5% 5%, rgba(124, 58, 237, 0.28), transparent 28%),
-        radial-gradient(circle at 95% 10%, rgba(6, 182, 212, 0.22), transparent 25%),
-        radial-gradient(circle at 50% 90%, rgba(236, 72, 153, 0.18), transparent 30%),
-        linear-gradient(135deg, #07111f 0%, #0b1024 45%, #111827 100%);
-    color: #f8fafc;
-}
-
-.main .block-container {
-    max-width: 1250px;
-    padding-top: 1.5rem;
-    padding-bottom: 3rem;
-}
-
-h1, h2, h3, h4, p {
-    font-family: Inter, system-ui, sans-serif;
-}
-
-p {
-    color: #cbd5e1;
-}
-
-
-/* =========================
-   TOP BAR
-========================= */
-
-.topbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 13px 20px;
-    margin-bottom: 25px;
-    border: 1px solid rgba(255,255,255,0.10);
-    border-radius: 18px;
-    background: rgba(15, 23, 42, 0.72);
-    backdrop-filter: blur(18px);
-    box-shadow: 0 10px 35px rgba(0,0,0,0.20);
-}
-
-.brand {
-    font-size: 19px;
-    font-weight: 800;
-    color: white;
-}
-
-.brand span {
-    background: linear-gradient(90deg, #a78bfa, #22d3ee, #f472b6);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.top-status {
-    font-size: 12px;
-    color: #a7f3d0;
-    background: rgba(16,185,129,0.12);
-    border: 1px solid rgba(16,185,129,0.25);
-    padding: 7px 13px;
-    border-radius: 30px;
-}
-
-
-/* =========================
-   HERO
-========================= */
-
-.hero {
-    position: relative;
-    overflow: hidden;
-    padding: 60px 55px;
-    border-radius: 32px;
-    margin-bottom: 28px;
-    border: 1px solid rgba(255,255,255,0.12);
-    background:
-        linear-gradient(
-            135deg,
-            rgba(124,58,237,0.38),
-            rgba(15,23,42,0.90) 45%,
-            rgba(6,182,212,0.24)
-        );
-    box-shadow:
-        0 30px 80px rgba(0,0,0,0.30),
-        inset 0 1px 0 rgba(255,255,255,0.08);
-}
-
-.hero:before {
-    content: "";
-    position: absolute;
-    width: 260px;
-    height: 260px;
-    right: -90px;
-    top: -90px;
-    background: rgba(34,211,238,0.18);
-    border-radius: 50%;
-    filter: blur(15px);
-}
-
-.hero:after {
-    content: "";
-    position: absolute;
-    width: 220px;
-    height: 220px;
-    left: -100px;
-    bottom: -110px;
-    background: rgba(236,72,153,0.18);
-    border-radius: 50%;
-    filter: blur(20px);
-}
-
-.hero-content {
-    position: relative;
-    z-index: 2;
-}
-
-.hero-tag {
-    display: inline-block;
-    padding: 8px 15px;
-    border-radius: 30px;
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 1.3px;
-    color: #ddd6fe;
-    background: rgba(139,92,246,0.18);
-    border: 1px solid rgba(167,139,250,0.35);
-    margin-bottom: 18px;
-}
-
-.hero h1 {
-    font-size: clamp(42px, 7vw, 72px);
-    line-height: 1;
-    margin: 0;
-    font-weight: 900;
-    letter-spacing: -3px;
-    background: linear-gradient(
-        90deg,
-        #ffffff,
-        #c4b5fd,
-        #67e8f9,
-        #f9a8d4
-    );
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.hero h2 {
-    font-size: 23px;
-    color: #e2e8f0;
-    margin-top: 18px;
-    margin-bottom: 15px;
-    font-weight: 700;
-}
-
-.hero p {
-    max-width: 780px;
-    font-size: 17px;
-    line-height: 1.8;
-    color: #cbd5e1;
-}
-
-.hero-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 25px;
-}
-
-.hero-chip {
-    padding: 8px 13px;
-    border-radius: 20px;
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.12);
-    color: #e2e8f0;
-    font-size: 12px;
-    font-weight: 700;
-}
-
-
-/* =========================
-   SECTION HEADER
-========================= */
-
-.section-header {
-    text-align: center;
-    margin: 42px 0 25px;
-}
-
-.section-label {
-    display: inline-block;
-    color: #67e8f9;
-    font-size: 11px;
-    font-weight: 900;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 8px;
-}
-
-.section-header h2 {
-    font-size: 32px;
-    margin: 0;
-    color: #f8fafc;
-    font-weight: 850;
-}
-
-.section-header p {
-    margin: 9px auto 0;
-    max-width: 720px;
-    font-size: 14px;
-}
-
-
-/* =========================
-   FEATURE CARDS
-========================= */
-
-.feature-card {
-    min-height: 210px;
-    padding: 27px 24px;
-    border-radius: 23px;
-    background: rgba(15,23,42,0.78);
-    border: 1px solid rgba(255,255,255,0.10);
-    box-shadow: 0 15px 40px rgba(0,0,0,0.20);
-    transition: transform 0.25s ease, border-color 0.25s ease;
-    position: relative;
-    overflow: hidden;
-}
-
-.feature-card:hover {
-    transform: translateY(-5px);
-    border-color: rgba(255,255,255,0.24);
-}
-
-.feature-card:before {
-    content: "";
-    position: absolute;
-    height: 4px;
-    left: 0;
-    right: 0;
-    top: 0;
-    background: linear-gradient(90deg, #8b5cf6, #22d3ee, #ec4899);
-}
-
-.feature-icon {
-    width: 52px;
-    height: 52px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 16px;
-    font-size: 25px;
-    margin-bottom: 20px;
-    background: linear-gradient(
-        135deg,
-        rgba(139,92,246,0.28),
-        rgba(34,211,238,0.16)
-    );
-    border: 1px solid rgba(255,255,255,0.10);
-}
-
-.feature-card h3 {
-    font-size: 17px;
-    color: white;
-    margin: 0 0 9px;
-    font-weight: 800;
-}
-
-.feature-card p {
-    font-size: 13px;
-    line-height: 1.65;
-    margin: 0;
-}
-
-
-/* =========================
-   ANALYSIS PANEL
-========================= */
-
-.analysis-wrapper {
-    padding: 28px;
-    border-radius: 28px;
-    background: rgba(15,23,42,0.72);
-    border: 1px solid rgba(255,255,255,0.10);
-    box-shadow: 0 25px 60px rgba(0,0,0,0.25);
-}
-
-.input-card {
-    padding: 22px;
-    min-height: 270px;
-    border-radius: 22px;
-    background: rgba(2,6,23,0.58);
-    border: 1px solid rgba(255,255,255,0.09);
-}
-
-.input-card.resume {
-    border-top: 3px solid #a78bfa;
-}
-
-.input-card.job {
-    border-top: 3px solid #22d3ee;
-}
-
-.input-title {
-    font-size: 18px;
-    font-weight: 800;
-    color: #f8fafc;
-    margin-bottom: 5px;
-}
-
-.input-subtitle {
-    font-size: 12px;
-    color: #94a3b8;
-    margin-bottom: 17px;
-}
-
-.upload-badge {
-    display: inline-block;
-    padding: 6px 10px;
-    margin-top: 10px;
-    border-radius: 12px;
-    font-size: 11px;
-    color: #c4b5fd;
-    background: rgba(139,92,246,0.12);
-    border: 1px solid rgba(139,92,246,0.25);
-}
-
-
-/* =========================
-   STREAMLIT INPUTS
-========================= */
-
-.stFileUploader {
-    background: rgba(15,23,42,0.55);
-    border-radius: 16px;
-}
-
-.stFileUploader section {
-    border: 1px dashed rgba(167,139,250,0.45) !important;
-    border-radius: 16px !important;
-    background: rgba(139,92,246,0.06) !important;
-}
-
-.stTextArea textarea {
-    background: rgba(2,6,23,0.75) !important;
-    color: #f8fafc !important;
-    border: 1px solid rgba(34,211,238,0.25) !important;
-    border-radius: 15px !important;
-    font-size: 14px !important;
-}
-
-.stTextArea textarea:focus {
-    border-color: #22d3ee !important;
-    box-shadow: 0 0 0 2px rgba(34,211,238,0.12) !important;
-}
-
-
-/* =========================
-   BUTTON
-========================= */
-
-.stButton > button {
-    width: 100%;
-    min-height: 55px;
-    border: none !important;
-    border-radius: 17px !important;
-    color: white !important;
-    font-size: 16px !important;
-    font-weight: 850 !important;
-    background: linear-gradient(
-        100deg,
-        #7c3aed,
-        #2563eb,
-        #06b6d4
-    ) !important;
-    box-shadow:
-        0 12px 30px rgba(37,99,235,0.28),
-        inset 0 1px 0 rgba(255,255,255,0.20);
-    transition: all 0.25s ease;
-}
-
-.stButton > button:hover {
-    transform: translateY(-2px);
-    box-shadow:
-        0 17px 38px rgba(37,99,235,0.40),
-        inset 0 1px 0 rgba(255,255,255,0.20);
-}
-
-
-/* =========================
-   RESULT HEADER
-========================= */
-
-.result-banner {
-    padding: 25px 28px;
-    border-radius: 24px;
-    margin: 30px 0 22px;
-    background:
-        linear-gradient(
-            110deg,
-            rgba(16,185,129,0.18),
-            rgba(6,182,212,0.12),
-            rgba(139,92,246,0.16)
-        );
-    border: 1px solid rgba(52,211,153,0.20);
-}
-
-.result-banner h2 {
-    margin: 0;
-    color: white;
-    font-size: 26px;
-}
-
-.result-banner p {
-    margin: 7px 0 0;
-}
-
-
-/* =========================
-   METRICS
-========================= */
-
-.metric-card {
-    padding: 23px;
-    border-radius: 21px;
-    min-height: 135px;
-    background: rgba(15,23,42,0.78);
-    border: 1px solid rgba(255,255,255,0.09);
-    box-shadow: 0 15px 35px rgba(0,0,0,0.18);
-}
-
-.metric-label {
-    color: #94a3b8;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 1.3px;
-    font-weight: 800;
-}
-
-.metric-value {
-    font-size: 34px;
-    font-weight: 900;
-    margin-top: 8px;
-    background: linear-gradient(90deg, #c4b5fd, #67e8f9);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.metric-small {
-    color: #64748b;
-    font-size: 11px;
-    margin-top: 4px;
-}
-
-
-/* =========================
-   SCORE RING
-========================= */
-
-.score-ring {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 10px auto 20px;
-    background: conic-gradient(
-        #8b5cf6 var(--score),
-        rgba(255,255,255,0.08) var(--score)
-    );
-    position: relative;
-}
-
-.score-ring:before {
-    content: "";
-    width: 116px;
-    height: 116px;
-    border-radius: 50%;
-    position: absolute;
-    background: #0b1220;
-}
-
-.score-number {
-    position: relative;
-    z-index: 2;
-    font-size: 32px;
-    font-weight: 900;
-    color: white;
-}
-
-.score-label {
-    text-align: center;
-    color: #94a3b8;
-    font-size: 12px;
-}
-
-
-/* =========================
-   CONTENT CARDS
-========================= */
-
-.content-card {
-    padding: 24px;
-    border-radius: 22px;
-    background: rgba(15,23,42,0.76);
-    border: 1px solid rgba(255,255,255,0.09);
-    margin-top: 20px;
-}
-
-.card-title {
-    font-size: 19px;
-    font-weight: 850;
-    color: white;
-    margin-bottom: 17px;
-}
-
-.skill-pill {
-    display: inline-block;
-    padding: 7px 12px;
-    margin: 4px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 700;
-    color: #ddd6fe;
-    background: rgba(139,92,246,0.13);
-    border: 1px solid rgba(139,92,246,0.28);
-}
-
-.skill-pill.match {
-    color: #a7f3d0;
-    background: rgba(16,185,129,0.12);
-    border-color: rgba(16,185,129,0.25);
-}
-
-.skill-pill.recommended {
-    color: #bae6fd;
-    background: rgba(6,182,212,0.12);
-    border-color: rgba(6,182,212,0.25);
-}
-
-
-/* =========================
-   SUGGESTION CARDS
-========================= */
-
-.suggestion {
-    padding: 15px 17px;
-    margin: 9px 0;
-    border-radius: 15px;
-    background: rgba(245,158,11,0.07);
-    border-left: 4px solid #f59e0b;
-    color: #e2e8f0;
-    font-size: 13px;
-    line-height: 1.6;
-}
-
-
-/* =========================
-   PROFILE
-========================= */
-
-.profile-card {
-    padding: 25px;
-    border-radius: 22px;
-    background:
-        linear-gradient(
-            135deg,
-            rgba(139,92,246,0.17),
-            rgba(34,211,238,0.08)
-        );
-    border: 1px solid rgba(167,139,250,0.20);
-}
-
-.profile-name {
-    font-size: 27px;
-    font-weight: 900;
-    color: white;
-}
-
-.profile-score {
-    display: inline-block;
-    margin-top: 9px;
-    padding: 7px 12px;
-    border-radius: 20px;
-    background: rgba(139,92,246,0.18);
-    color: #c4b5fd;
-    font-size: 12px;
-    font-weight: 800;
-}
-
-
-/* =========================
-   EXPANDER
-========================= */
-
-.streamlit-expanderHeader {
-    background: rgba(15,23,42,0.70) !important;
-    border-radius: 15px !important;
-    color: #e2e8f0 !important;
-}
-
-
-/* =========================
-   DOWNLOAD
-========================= */
-
-.stDownloadButton > button {
-    background: rgba(16,185,129,0.14) !important;
-    border: 1px solid rgba(16,185,129,0.30) !important;
-    color: #a7f3d0 !important;
-    border-radius: 14px !important;
-}
-
-
-/* =========================
-   FOOTER
-========================= */
-
-.footer {
-    margin-top: 55px;
-    padding: 30px;
-    border-radius: 25px;
-    text-align: center;
-    background:
-        linear-gradient(
-            135deg,
-            rgba(124,58,237,0.15),
-            rgba(6,182,212,0.10)
-        );
-    border: 1px solid rgba(255,255,255,0.08);
-}
-
-.footer-brand {
-    font-size: 22px;
-    font-weight: 900;
-    color: white;
-}
-
-.footer-text {
-    margin-top: 6px;
-    color: #94a3b8;
-    font-size: 13px;
-}
-
-.footer-highlight {
-    margin-top: 16px;
-    color: #67e8f9;
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.5px;
-}
-
-
-/* =========================
-   MOBILE
-========================= */
-
-@media (max-width: 768px) {
+# =========================================================
+# SAFE CUSTOM CSS
+# =========================================================
+
+st.markdown(
+    """
+    <style>
+
+    .stApp {
+        background:
+            radial-gradient(circle at 10% 10%, rgba(124,58,237,.22), transparent 25%),
+            radial-gradient(circle at 90% 15%, rgba(6,182,212,.18), transparent 25%),
+            linear-gradient(135deg, #070b18, #10172a, #0b1220);
+    }
 
     .main .block-container {
-        padding-left: 1rem;
-        padding-right: 1rem;
+        max-width: 1250px;
+        padding-top: 1.5rem;
+        padding-bottom: 3rem;
     }
 
-    .hero {
-        padding: 38px 25px;
-        border-radius: 25px;
+    /* TOP BAR */
+    .topbar {
+        padding: 12px 18px;
+        border-radius: 16px;
+        background: rgba(15,23,42,.75);
+        border: 1px solid rgba(255,255,255,.10);
+        margin-bottom: 20px;
     }
 
-    .hero h1 {
-        font-size: 45px;
-        letter-spacing: -2px;
+    .topbar-title {
+        font-size: 19px;
+        font-weight: 800;
+        color: white;
     }
 
-    .hero h2 {
+    .topbar-sub {
+        font-size: 11px;
+        color: #94a3b8;
+        margin-top: 2px;
+    }
+
+    /* HERO */
+    .hero-box {
+        padding: 45px 42px;
+        border-radius: 28px;
+        background:
+            linear-gradient(
+                135deg,
+                rgba(124,58,237,.35),
+                rgba(15,23,42,.92) 55%,
+                rgba(6,182,212,.20)
+            );
+        border: 1px solid rgba(255,255,255,.12);
+        box-shadow: 0 25px 70px rgba(0,0,0,.30);
+        margin-bottom: 28px;
+    }
+
+    .hero-tag {
+        display: inline-block;
+        padding: 7px 13px;
+        border-radius: 20px;
+        background: rgba(139,92,246,.18);
+        border: 1px solid rgba(167,139,250,.30);
+        color: #ddd6fe;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 1px;
+    }
+
+    .hero-title {
+        font-size: 58px;
+        line-height: 1;
+        font-weight: 900;
+        margin: 16px 0 8px;
+        color: white;
+    }
+
+    .hero-subtitle {
+        font-size: 23px;
+        font-weight: 700;
+        color: #e2e8f0;
+        margin-bottom: 14px;
+    }
+
+    .hero-description {
+        max-width: 780px;
+        color: #cbd5e1;
+        font-size: 15px;
+        line-height: 1.7;
+    }
+
+    /* CHIPS */
+    .chip {
+        display: inline-block;
+        padding: 7px 11px;
+        margin: 4px 4px 0 0;
+        border-radius: 20px;
+        background: rgba(255,255,255,.08);
+        border: 1px solid rgba(255,255,255,.10);
+        color: #e2e8f0;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    /* SECTION */
+    .section-box {
+        text-align: center;
+        margin: 38px 0 22px;
+    }
+
+    .section-label {
+        color: #67e8f9;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 2px;
+    }
+
+    .section-title {
+        color: white;
+        font-size: 30px;
+        font-weight: 850;
+        margin: 5px 0;
+    }
+
+    .section-description {
+        color: #94a3b8;
+        font-size: 13px;
+    }
+
+    /* FEATURE CARD */
+    .feature {
+        min-height: 190px;
+        padding: 23px;
+        border-radius: 20px;
+        background: rgba(15,23,42,.80);
+        border: 1px solid rgba(255,255,255,.09);
+        box-shadow: 0 12px 30px rgba(0,0,0,.18);
+    }
+
+    .feature-icon {
+        font-size: 28px;
+        margin-bottom: 12px;
+    }
+
+    .feature-title {
+        color: white;
+        font-size: 16px;
+        font-weight: 800;
+        margin-bottom: 8px;
+    }
+
+    .feature-text {
+        color: #94a3b8;
+        font-size: 12px;
+        line-height: 1.6;
+    }
+
+    /* INPUT CARDS */
+    .input-card {
+        padding: 20px;
+        border-radius: 20px;
+        background: rgba(15,23,42,.75);
+        border: 1px solid rgba(255,255,255,.09);
+        min-height: 110px;
+    }
+
+    .input-title {
+        color: white;
         font-size: 18px;
+        font-weight: 800;
     }
 
-    .hero p {
-        font-size: 14px;
+    .input-description {
+        color: #94a3b8;
+        font-size: 12px;
+        margin-top: 5px;
     }
 
-    .analysis-wrapper {
-        padding: 17px;
+    /* RESULTS */
+    .result-card {
+        padding: 20px;
+        border-radius: 19px;
+        background: rgba(15,23,42,.80);
+        border: 1px solid rgba(255,255,255,.09);
     }
 
-    .top-status {
-        display: none;
+    .result-label {
+        color: #94a3b8;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        text-transform: uppercase;
     }
 
-}
+    .result-number {
+        color: white;
+        font-size: 32px;
+        font-weight: 900;
+        margin-top: 5px;
+    }
 
-</style>
-""", unsafe_allow_html=True)
+    .result-small {
+        color: #64748b;
+        font-size: 11px;
+    }
+
+    /* PROFILE */
+    .profile-card {
+        padding: 24px;
+        border-radius: 20px;
+        background: linear-gradient(
+            135deg,
+            rgba(124,58,237,.18),
+            rgba(6,182,212,.08)
+        );
+        border: 1px solid rgba(167,139,250,.18);
+    }
+
+    .profile-name {
+        color: white;
+        font-size: 26px;
+        font-weight: 900;
+    }
+
+    .profile-info {
+        color: #94a3b8;
+        font-size: 12px;
+        margin-top: 7px;
+    }
+
+    /* SKILLS */
+    .skill {
+        display: inline-block;
+        padding: 7px 11px;
+        margin: 3px;
+        border-radius: 20px;
+        color: #ddd6fe;
+        background: rgba(139,92,246,.13);
+        border: 1px solid rgba(139,92,246,.25);
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .skill-match {
+        color: #a7f3d0;
+        background: rgba(16,185,129,.12);
+        border-color: rgba(16,185,129,.25);
+    }
+
+    .skill-recommend {
+        color: #bae6fd;
+        background: rgba(6,182,212,.12);
+        border-color: rgba(6,182,212,.25);
+    }
+
+    /* SUGGESTION */
+    .suggestion {
+        padding: 13px 15px;
+        margin: 8px 0;
+        border-radius: 13px;
+        background: rgba(245,158,11,.08);
+        border-left: 3px solid #f59e0b;
+        color: #cbd5e1;
+        font-size: 12px;
+        line-height: 1.6;
+    }
+
+    /* FOOTER */
+    .footer {
+        text-align: center;
+        padding: 28px;
+        margin-top: 45px;
+        border-radius: 22px;
+        background: rgba(15,23,42,.65);
+        border: 1px solid rgba(255,255,255,.08);
+    }
+
+    .footer-title {
+        color: white;
+        font-size: 20px;
+        font-weight: 900;
+    }
+
+    .footer-text {
+        color: #64748b;
+        font-size: 12px;
+        margin-top: 5px;
+    }
+
+    .footer-highlight {
+        color: #67e8f9;
+        font-size: 11px;
+        font-weight: 800;
+        margin-top: 13px;
+    }
+
+    /* BUTTON */
+    .stButton > button {
+        min-height: 52px;
+        border-radius: 15px;
+        border: none;
+        color: white;
+        font-weight: 800;
+        background: linear-gradient(
+            100deg,
+            #7c3aed,
+            #2563eb,
+            #06b6d4
+        );
+        box-shadow: 0 10px 25px rgba(37,99,235,.25);
+    }
+
+    .stButton > button:hover {
+        border: none;
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .stTextArea textarea {
+        background: rgba(2,6,23,.75) !important;
+        color: white !important;
+        border-radius: 14px !important;
+        border: 1px solid rgba(6,182,212,.25) !important;
+    }
+
+    @media(max-width:768px) {
+        .hero-box {
+            padding: 30px 22px;
+        }
+
+        .hero-title {
+            font-size: 43px;
+        }
+
+        .hero-subtitle {
+            font-size: 18px;
+        }
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 
-# ============================================================
+# =========================================================
 # TOP BAR
-# ============================================================
+# =========================================================
 
-st.markdown("""
-<div class="topbar">
-    <div class="brand">🚀 <span>ResumeAI</span></div>
-    <div class="top-status">● AI Career Intelligence Active</div>
-</div>
-""", unsafe_allow_html=True)
+st.markdown(
+    """
+    <div class="topbar">
+        <div class="topbar-title">🚀 ResumeAI</div>
+        <div class="topbar-sub">
+            AI Career Intelligence • Resume • Skills • Jobs
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 
-# ============================================================
+# =========================================================
 # HERO
-# ============================================================
+# =========================================================
 
-st.markdown("""
-<div class="hero">
-    <div class="hero-content">
+st.markdown(
+    """
+    <div class="hero-box">
 
         <div class="hero-tag">
             ✦ AI-POWERED CAREER INTELLIGENCE
         </div>
 
-        <h1>
+        <div class="hero-title">
             🚀 ResumeAI
-        </h1>
+        </div>
 
-        <h2>
+        <div class="hero-subtitle">
             Multimodal RAG-Based Resume & Job Analyzer
-        </h2>
+        </div>
 
-        <p>
+        <div class="hero-description">
             Transform your resume into powerful career insights.
             Analyze your skills, discover your ideal career profile,
             compare job requirements, and receive AI-powered
             recommendations to build a stronger, job-ready resume.
-        </p>
-
-        <div class="hero-chips">
-            <div class="hero-chip">📄 Resume Parsing</div>
-            <div class="hero-chip">🎯 ATS Scoring</div>
-            <div class="hero-chip">🧠 Career Analysis</div>
-            <div class="hero-chip">⚡ Skill Matching</div>
-            <div class="hero-chip">✨ Smart Suggestions</div>
         </div>
 
+        <br>
+
+        <span class="chip">📄 Resume Parsing</span>
+        <span class="chip">🎯 ATS Scoring</span>
+        <span class="chip">🧠 Career Analysis</span>
+        <span class="chip">⚡ Skill Matching</span>
+        <span class="chip">✨ Smart Suggestions</span>
+
     </div>
-</div>
-""", unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True
+)
 
 
-# ============================================================
+# =========================================================
+# SECTION HEADER
+# =========================================================
+
+st.markdown(
+    """
+    <div class="section-box">
+        <div class="section-label">POWERFUL AI FEATURES</div>
+        <div class="section-title">✨ Powerful Resume Intelligence</div>
+        <div class="section-description">
+            Everything you need to understand, improve, and optimize
+            your resume for today's competitive job market.
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# =========================================================
 # FEATURES
-# ============================================================
-
-st.markdown("""
-<div class="section-header">
-    <div class="section-label">POWERFUL AI FEATURES</div>
-    <h2>✨ Powerful Resume Intelligence</h2>
-    <p>
-        Everything you need to understand, improve, and optimize
-        your resume for today's competitive job market.
-    </p>
-</div>
-""", unsafe_allow_html=True)
+# =========================================================
 
 features = [
     (
@@ -832,61 +485,110 @@ features = [
     )
 ]
 
-cols = st.columns(5)
+feature_columns = st.columns(5)
 
-for i, (icon, title, description) in enumerate(features):
-    with cols[i]:
+for i, feature in enumerate(features):
+
+    icon, title, description = feature
+
+    with feature_columns[i]:
+
         st.markdown(
             f"""
-            <div class="feature-card">
-                <div class="feature-icon">{icon}</div>
-                <h3>{title}</h3>
-                <p>{description}</p>
+            <div class="feature">
+
+                <div class="feature-icon">
+                    {icon}
+                </div>
+
+                <div class="feature-title">
+                    {title}
+                </div>
+
+                <div class="feature-text">
+                    {description}
+                </div>
+
             </div>
             """,
             unsafe_allow_html=True
         )
 
 
-# ============================================================
-# SKILLS DATABASE
-# ============================================================
+# =========================================================
+# SKILL DATABASE
+# =========================================================
 
 SKILLS = [
-    "Python", "Java", "C", "C++", "SQL",
-    "MySQL", "PostgreSQL", "MongoDB",
-    "HTML", "CSS", "JavaScript",
-    "React", "Node.js", "Flask", "Django",
-    "Streamlit", "Git", "GitHub", "Docker",
-    "AWS", "Azure", "GCP",
-    "Excel", "Power BI", "Tableau", "PowerPoint",
+    "Python",
+    "Java",
+    "C",
+    "C++",
+    "SQL",
+    "MySQL",
+    "PostgreSQL",
+    "MongoDB",
+    "HTML",
+    "CSS",
+    "JavaScript",
+    "React",
+    "Node.js",
+    "Flask",
+    "Django",
+    "Streamlit",
+    "Git",
+    "GitHub",
+    "Docker",
+    "AWS",
+    "Azure",
+    "GCP",
+    "Excel",
+    "Power BI",
+    "Tableau",
+    "PowerPoint",
     "MS Office",
-    "Pandas", "NumPy", "Matplotlib", "Seaborn",
-    "Scikit-learn", "TensorFlow", "PyTorch",
-    "Machine Learning", "Deep Learning",
-    "Artificial Intelligence", "AI",
-    "Data Analysis", "Data Analytics",
-    "Data Visualization", "Statistics",
-    "Data Cleaning", "Data Preprocessing",
+    "Pandas",
+    "NumPy",
+    "Matplotlib",
+    "Seaborn",
+    "Scikit-learn",
+    "TensorFlow",
+    "PyTorch",
+    "Machine Learning",
+    "Deep Learning",
+    "Artificial Intelligence",
+    "AI",
+    "Data Analysis",
+    "Data Analytics",
+    "Data Visualization",
+    "Statistics",
+    "Data Cleaning",
+    "Data Preprocessing",
     "Data Mining",
-    "NLP", "Natural Language Processing",
-    "RAG", "LLM", "Generative AI",
+    "NLP",
+    "Natural Language Processing",
+    "RAG",
+    "LLM",
+    "Generative AI",
     "Firebase",
-    "Communication", "Leadership",
-    "Problem Solving", "Teamwork"
+    "Communication",
+    "Leadership",
+    "Problem Solving",
+    "Teamwork"
 ]
 
 
-# ============================================================
+# =========================================================
 # FUNCTIONS
-# ============================================================
+# =========================================================
 
 def extract_pdf_text(uploaded_file):
 
     if pymupdf is None:
-        return "PDF_READER_NOT_AVAILABLE"
+        return ""
 
     try:
+
         pdf_bytes = uploaded_file.getvalue()
 
         document = pymupdf.open(
@@ -901,13 +603,10 @@ def extract_pdf_text(uploaded_file):
 
         document.close()
 
-        if len(text.strip()) >= 80:
-            return text
-
-        return "OCR_REQUIRED"
+        return text
 
     except Exception:
-        return "PDF_EXTRACTION_ERROR"
+        return ""
 
 
 def extract_ocr_text(uploaded_file):
@@ -916,6 +615,7 @@ def extract_ocr_text(uploaded_file):
         return ""
 
     try:
+
         pdf_bytes = uploaded_file.getvalue()
 
         document = pymupdf.open(
@@ -923,7 +623,7 @@ def extract_ocr_text(uploaded_file):
             filetype="pdf"
         )
 
-        full_text = []
+        pages = []
 
         for page in document:
 
@@ -940,16 +640,16 @@ def extract_ocr_text(uploaded_file):
                 io.BytesIO(image_bytes)
             )
 
-            page_text = pytesseract.image_to_string(
+            text = pytesseract.image_to_string(
                 image,
                 config="--psm 6"
             )
 
-            full_text.append(page_text)
+            pages.append(text)
 
         document.close()
 
-        return "\n".join(full_text)
+        return "\n".join(pages)
 
     except Exception:
         return ""
@@ -963,28 +663,23 @@ def process_resume(uploaded_file):
 
         text = extract_pdf_text(uploaded_file)
 
-        if text == "OCR_REQUIRED":
+        if len(text.strip()) >= 80:
+            return text, False
 
-            ocr_text = extract_ocr_text(uploaded_file)
+        ocr_text = extract_ocr_text(uploaded_file)
 
-            if ocr_text.strip():
-                return ocr_text, True
-
-            return "", True
-
-        if text.startswith("PDF_"):
-            return "", False
-
-        return text, False
+        return ocr_text, True
 
     if filename.endswith(".txt"):
 
         try:
-            return (
-                uploaded_file.getvalue()
-                .decode("utf-8", errors="ignore"),
-                False
+            text = uploaded_file.getvalue().decode(
+                "utf-8",
+                errors="ignore"
             )
+
+            return text, False
+
         except Exception:
             return "", False
 
@@ -999,9 +694,12 @@ def extract_skills(text):
 
     for skill in SKILLS:
 
-        pattern = r"\b" + re.escape(skill.lower()) + r"\b"
+        pattern = r"\b" + re.escape(
+            skill.lower()
+        ) + r"\b"
 
         if re.search(pattern, text_lower):
+
             detected.append(skill)
 
     return detected
@@ -1015,12 +713,31 @@ def extract_keywords(text):
     )
 
     stop_words = {
-        "the", "and", "for", "with", "this",
-        "that", "from", "your", "you",
-        "are", "was", "were", "have",
-        "has", "will", "into", "using",
-        "our", "their", "about", "which",
-        "also", "can", "job", "work"
+        "the",
+        "and",
+        "for",
+        "with",
+        "this",
+        "that",
+        "from",
+        "your",
+        "you",
+        "are",
+        "was",
+        "were",
+        "have",
+        "has",
+        "will",
+        "into",
+        "using",
+        "our",
+        "their",
+        "about",
+        "which",
+        "also",
+        "can",
+        "job",
+        "work"
     }
 
     frequency = {}
@@ -1030,7 +747,10 @@ def extract_keywords(text):
         if word in stop_words:
             continue
 
-        frequency[word] = frequency.get(word, 0) + 1
+        frequency[word] = frequency.get(
+            word,
+            0
+        ) + 1
 
     sorted_words = sorted(
         frequency.items(),
@@ -1038,64 +758,70 @@ def extract_keywords(text):
         reverse=True
     )
 
-    return [word for word, count in sorted_words[:20]]
+    return [
+        word
+        for word, count in sorted_words[:20]
+    ]
 
 
-def calculate_scores(resume_text, job_text, skills):
+def calculate_scores(
+    resume_text,
+    job_text,
+    resume_skills
+):
 
     resume_lower = resume_text.lower()
 
-    if job_text.strip():
+    job_skills = extract_skills(
+        job_text
+    )
 
-        job_skills = extract_skills(job_text)
+    if job_skills:
 
-        if job_skills:
+        matched = [
+            skill
+            for skill in job_skills
+            if skill.lower() in resume_lower
+        ]
 
-            matched = [
-                skill for skill in job_skills
-                if skill.lower() in resume_lower
-            ]
-
-            skill_match = round(
-                len(matched) / len(job_skills) * 100
-            )
-
-        else:
-            skill_match = 0
-
-        resume_keywords = set(
-            extract_keywords(resume_text)
+        skill_match = round(
+            len(matched)
+            / len(job_skills)
+            * 100
         )
-
-        job_keywords = set(
-            extract_keywords(job_text)
-        )
-
-        if job_keywords:
-
-            keyword_match = round(
-                len(
-                    resume_keywords.intersection(
-                        job_keywords
-                    )
-                )
-                / len(job_keywords)
-                * 100
-            )
-
-        else:
-            keyword_match = 0
 
     else:
 
         skill_match = min(
             100,
-            len(skills) * 6
+            len(resume_skills) * 6
         )
+
+    resume_keywords = set(
+        extract_keywords(resume_text)
+    )
+
+    job_keywords = set(
+        extract_keywords(job_text)
+    )
+
+    if job_keywords:
+
+        keyword_match = round(
+            len(
+                resume_keywords.intersection(
+                    job_keywords
+                )
+            )
+            / len(job_keywords)
+            * 100
+        )
+
+    else:
 
         keyword_match = min(
             100,
-            len(extract_keywords(resume_text)) * 5
+            len(resume_keywords) * 5
         )
 
     content_score = min(
@@ -1106,11 +832,9 @@ def calculate_scores(resume_text, job_text, skills):
     )
 
     overall = round(
-        (
-            content_score * 0.35
-            + skill_match * 0.40
-            + keyword_match * 0.25
-        )
+        content_score * 0.35
+        + skill_match * 0.40
+        + keyword_match * 0.25
     )
 
     overall = max(
@@ -1121,15 +845,20 @@ def calculate_scores(resume_text, job_text, skills):
     return (
         overall,
         skill_match,
-        keyword_match
+        keyword_match,
+        job_skills
     )
 
 
-def detect_profile(skills, text):
+def detect_profile(
+    skills,
+    text
+):
 
     text_lower = text.lower()
 
     profiles = {
+
         "Data Analyst": [
             "python",
             "sql",
@@ -1211,8 +940,6 @@ def detect_profile(skills, text):
 
 def generate_suggestions(
     resume_text,
-    job_text,
-    resume_skills,
     job_skills
 ):
 
@@ -1221,38 +948,48 @@ def generate_suggestions(
     text_lower = resume_text.lower()
 
     if len(resume_text) < 500:
+
         suggestions.append(
-            "Add more detailed project, internship, education, and achievement information to strengthen your resume."
+            "Add more detailed project, internship, education, and achievement information."
         )
 
     if "project" not in text_lower:
+
         suggestions.append(
-            "Add 2–3 relevant projects with technologies used and measurable outcomes."
+            "Add 2–3 relevant projects with technologies used and measurable results."
         )
 
-    if "experience" not in text_lower and "intern" not in text_lower:
+    if (
+        "experience" not in text_lower
+        and "intern" not in text_lower
+    ):
+
         suggestions.append(
             "Include internship, academic, freelance, or practical experience where applicable."
         )
 
     if "education" not in text_lower:
+
         suggestions.append(
             "Make your education section clear and easy for ATS systems to identify."
         )
 
-    missing_skills = [
-        skill for skill in job_skills
+    missing = [
+        skill
+        for skill in job_skills
         if skill.lower() not in text_lower
     ]
 
-    if missing_skills:
+    if missing:
+
         suggestions.append(
             "Consider adding relevant missing skills only if you genuinely have experience with them: "
-            + ", ".join(missing_skills[:6])
+            + ", ".join(missing[:6])
             + "."
         )
 
     if not suggestions:
+
         suggestions.append(
             "Your resume has a solid foundation. Focus on measurable achievements and tailoring keywords to each target job."
         )
@@ -1260,147 +997,126 @@ def generate_suggestions(
     return suggestions
 
 
-def score_message(score):
-
-    if score >= 80:
-        return "Excellent Match", "🟢"
-
-    if score >= 65:
-        return "Strong Match", "🔵"
-
-    if score >= 50:
-        return "Moderate Match", "🟡"
-
-    return "Needs Improvement", "🟠"
-
-
-# ============================================================
+# =========================================================
 # ANALYSIS SECTION
-# ============================================================
-
-st.markdown("""
-<div class="section-header">
-    <div class="section-label">ANALYSIS WORKSPACE</div>
-    <h2>🔍 Start Your Resume Analysis</h2>
-    <p>
-        Upload your resume and add a target job description
-        to discover your skills, match score, career profile,
-        and personalized improvement recommendations.
-    </p>
-</div>
-""", unsafe_allow_html=True)
-
+# =========================================================
 
 st.markdown(
-    '<div class="analysis-wrapper">',
+    """
+    <div class="section-box">
+        <div class="section-label">ANALYSIS WORKSPACE</div>
+
+        <div class="section-title">
+            🔍 Start Your Resume Analysis
+        </div>
+
+        <div class="section-description">
+            Upload your resume and add a target job description
+            to discover your skills, match score, career profile,
+            and personalized improvement recommendations.
+        </div>
+    </div>
+    """,
     unsafe_allow_html=True
 )
 
-col1, col2 = st.columns(2, gap="large")
+
+# =========================================================
+# INPUT AREA
+# =========================================================
+
+left, right = st.columns(
+    2,
+    gap="large"
+)
 
 
-# ============================================================
-# RESUME INPUT
-# ============================================================
+with left:
 
-with col1:
+    st.markdown(
+        """
+        <div class="input-card">
 
-    st.markdown("""
-    <div class="input-card resume">
+            <div class="input-title">
+                📄 Upload Your Resume
+            </div>
 
-        <div class="input-title">
-            📄 Upload Your Resume
+            <div class="input-description">
+                Upload your PDF or TXT resume for AI-powered analysis.
+            </div>
+
         </div>
-
-        <div class="input-subtitle">
-            Upload your PDF or TXT resume for AI-powered analysis.
-        </div>
-
-    </div>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
 
     uploaded_file = st.file_uploader(
-        "Choose your resume",
+        "Resume",
         type=["pdf", "txt"],
         label_visibility="collapsed"
     )
 
     if uploaded_file:
 
-        st.markdown(
-            f"""
-            <div class="upload-badge">
-                ✓ {html.escape(uploaded_file.name)} uploaded successfully
-            </div>
-            """,
-            unsafe_allow_html=True
+        st.success(
+            f"✓ {uploaded_file.name} uploaded"
         )
 
 
-# ============================================================
-# JOB DESCRIPTION
-# ============================================================
+with right:
 
-with col2:
+    st.markdown(
+        """
+        <div class="input-card">
 
-    st.markdown("""
-    <div class="input-card job">
+            <div class="input-title">
+                💼 Job Description
+            </div>
 
-        <div class="input-title">
-            💼 Job Description
+            <div class="input-description">
+                Paste the target job description to compare your resume.
+            </div>
+
         </div>
-
-        <div class="input-subtitle">
-            Paste the target job description to compare your resume.
-        </div>
-
-    </div>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
 
     job_description = st.text_area(
         "Job Description",
         placeholder=(
-            "Paste the job description here...\n\n"
-            "Example:\n"
-            "Python, SQL, Pandas, Excel, Power BI, "
-            "Data Analysis, Statistics..."
+            "Paste the target job description here..."
         ),
         height=180,
         label_visibility="collapsed"
     )
 
 
-st.markdown(
-    "<br>",
-    unsafe_allow_html=True
-)
+st.write("")
 
-analyze = st.button(
+
+analyze_button = st.button(
     "🚀 Analyze My Resume",
     use_container_width=True
 )
 
-st.markdown(
-    "</div>",
-    unsafe_allow_html=True
-)
 
+# =========================================================
+# ANALYSIS RESULT
+# =========================================================
 
-# ============================================================
-# ANALYSIS
-# ============================================================
-
-if analyze:
+if analyze_button:
 
     if uploaded_file is None:
 
-        st.error(
+        st.warning(
             "📄 Please upload your resume first."
         )
+
         st.stop()
 
     with st.spinner(
-        "🔄 Analyzing your resume and matching career insights..."
+        "🔄 Analyzing your resume..."
     ):
 
         resume_text, used_ocr = process_resume(
@@ -1410,23 +1126,20 @@ if analyze:
         if not resume_text.strip():
 
             st.error(
-                "❌ Unable to extract text from this resume. "
-                "Please upload a text-based PDF or TXT file."
+                "❌ Unable to extract text from this resume."
             )
+
             st.stop()
 
         resume_skills = extract_skills(
             resume_text
         )
 
-        job_skills = extract_skills(
-            job_description
-        )
-
         (
             overall_score,
             skill_match,
-            keyword_match
+            keyword_match,
+            job_skills
         ) = calculate_scores(
             resume_text,
             job_description,
@@ -1440,8 +1153,6 @@ if analyze:
 
         suggestions = generate_suggestions(
             resume_text,
-            job_description,
-            resume_skills,
             job_skills
         )
 
@@ -1459,169 +1170,130 @@ if analyze:
             not in resume_text.lower()
         ][:10]
 
-    # ========================================================
-    # RESULT BANNER
-    # ========================================================
 
-    status_text, status_icon = score_message(
-        overall_score
+    # =====================================================
+    # RESULT HEADER
+    # =====================================================
+
+    if overall_score >= 80:
+
+        result_message = "Excellent Match 🟢"
+
+    elif overall_score >= 65:
+
+        result_message = "Strong Match 🔵"
+
+    elif overall_score >= 50:
+
+        result_message = "Moderate Match 🟡"
+
+    else:
+
+        result_message = "Needs Improvement 🟠"
+
+
+    st.success(
+        f"✨ Resume Analysis Complete — {result_message}"
     )
 
-    st.markdown(
-        f"""
-        <div class="result-banner">
 
-            <h2>
-                ✨ Resume Analysis Complete
-            </h2>
-
-            <p>
-                {status_icon} <strong>{status_text}</strong>
-                — Your resume has been analyzed successfully.
-            </p>
-
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    # ========================================================
+    # =====================================================
     # METRICS
-    # ========================================================
+    # =====================================================
 
-    m1, m2, m3, m4 = st.columns(4)
+    c1, c2, c3, c4 = st.columns(4)
 
-    with m1:
+    with c1:
 
         st.markdown(
             f"""
-            <div class="metric-card">
-
-                <div class="metric-label">
+            <div class="result-card">
+                <div class="result-label">
                     Overall ATS Score
                 </div>
-
-                <div class="metric-value">
+                <div class="result-number">
                     {overall_score}%
                 </div>
-
-                <div class="metric-small">
+                <div class="result-small">
                     Resume strength
                 </div>
-
             </div>
             """,
             unsafe_allow_html=True
         )
 
-    with m2:
+    with c2:
 
         st.markdown(
             f"""
-            <div class="metric-card">
-
-                <div class="metric-label">
+            <div class="result-card">
+                <div class="result-label">
                     Skill Match
                 </div>
-
-                <div class="metric-value">
+                <div class="result-number">
                     {skill_match}%
                 </div>
-
-                <div class="metric-small">
+                <div class="result-small">
                     Job requirements
                 </div>
-
             </div>
             """,
             unsafe_allow_html=True
         )
 
-    with m3:
+    with c3:
 
         st.markdown(
             f"""
-            <div class="metric-card">
-
-                <div class="metric-label">
+            <div class="result-card">
+                <div class="result-label">
                     Keyword Match
                 </div>
-
-                <div class="metric-value">
+                <div class="result-number">
                     {keyword_match}%
                 </div>
-
-                <div class="metric-small">
+                <div class="result-small">
                     Relevant keywords
                 </div>
-
             </div>
             """,
             unsafe_allow_html=True
         )
 
-    with m4:
+    with c4:
 
         st.markdown(
             f"""
-            <div class="metric-card">
-
-                <div class="metric-label">
+            <div class="result-card">
+                <div class="result-label">
                     Skills Detected
                 </div>
-
-                <div class="metric-value">
+                <div class="result-number">
                     {len(resume_skills)}
                 </div>
-
-                <div class="metric-small">
-                    Technical & soft skills
+                <div class="result-small">
+                    Resume skills
                 </div>
-
             </div>
             """,
             unsafe_allow_html=True
         )
 
 
-    # ========================================================
-    # SCORE + PROFILE
-    # ========================================================
-
-    left, right = st.columns([1, 1], gap="large")
-
-    with left:
-
-        score_percentage = f"{overall_score}%"
-
-        st.markdown(
-            f"""
-            <div class="content-card">
-
-                <div class="card-title">
-                    🎯 Overall Resume Strength
-                </div>
-
-                <div
-                    class="score-ring"
-                    style="--score:{score_percentage};"
-                >
-                    <div class="score-number">
-                        {overall_score}
-                    </div>
-                </div>
-
-                <div class="score-label">
-                    Resume / Job Compatibility
-                </div>
-
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+    st.write("")
 
 
-    with right:
+    # =====================================================
+    # PROFILE
+    # =====================================================
+
+    profile_col, score_col = st.columns(
+        2,
+        gap="large"
+    )
+
+
+    with profile_col:
 
         primary_profile = (
             profiles[0][0]
@@ -1637,27 +1309,23 @@ if analyze:
 
         st.markdown(
             f"""
-            <div class="content-card">
+            <div class="profile-card">
 
-                <div class="card-title">
-                    🧠 Detected Career Profile
+                <div class="result-label">
+                    DETECTED CAREER PROFILE
                 </div>
 
-                <div class="profile-card">
+                <div class="profile-name">
+                    🧠 {primary_profile}
+                </div>
 
-                    <div class="profile-name">
-                        {html.escape(primary_profile)}
-                    </div>
+                <div class="profile-info">
+                    Based on the technologies, skills,
+                    and keywords found in your resume.
+                </div>
 
-                    <div class="profile-score">
-                        Profile relevance: {profile_score} signals
-                    </div>
-
-                    <p style="margin-top:18px;">
-                        Based on the skills, technologies,
-                        and keywords identified in your resume.
-                    </p>
-
+                <div class="profile-info">
+                    Matching signals: {profile_score}
                 </div>
 
             </div>
@@ -1666,34 +1334,53 @@ if analyze:
         )
 
 
-    # ========================================================
-    # SKILLS
-    # ========================================================
+    with score_col:
 
-    st.markdown(
-        '<div class="content-card">',
-        unsafe_allow_html=True
-    )
+        st.markdown(
+            f"""
+            <div class="profile-card">
 
-    st.markdown(
-        '<div class="card-title">🛠️ Skills Detected</div>',
-        unsafe_allow_html=True
+                <div class="result-label">
+                    RESUME HEALTH
+                </div>
+
+                <div class="profile-name">
+                    {result_message}
+                </div>
+
+                <div class="profile-info">
+                    Your current resume compatibility score
+                    is {overall_score}%.
+                </div>
+
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+
+    # =====================================================
+    # DETECTED SKILLS
+    # =====================================================
+
+    st.subheader(
+        "🛠️ Skills Detected"
     )
 
     if resume_skills:
 
-        skills_html = ""
+        skill_html = ""
 
         for skill in resume_skills:
 
-            skills_html += (
-                f'<span class="skill-pill">'
-                f'{html.escape(skill)}'
+            skill_html += (
+                f'<span class="skill">'
+                f'{skill}'
                 f'</span>'
             )
 
         st.markdown(
-            skills_html,
+            skill_html,
             unsafe_allow_html=True
         )
 
@@ -1703,88 +1390,67 @@ if analyze:
             "No recognized skills were detected."
         )
 
-    st.markdown(
-        '</div>',
-        unsafe_allow_html=True
-    )
 
-
-    # ========================================================
-    # MATCHING SKILLS
-    # ========================================================
+    # =====================================================
+    # MATCHING / RECOMMENDED
+    # =====================================================
 
     match_col, recommend_col = st.columns(
         2,
         gap="large"
     )
 
+
     with match_col:
 
-        st.markdown(
-            '<div class="content-card">',
-            unsafe_allow_html=True
-        )
-
-        st.markdown(
-            '<div class="card-title">🤝 Skills Matching the Job</div>',
-            unsafe_allow_html=True
+        st.subheader(
+            "🤝 Skills Matching the Job"
         )
 
         if matched_skills:
 
-            matched_html = ""
+            html_text = ""
 
             for skill in matched_skills:
 
-                matched_html += (
-                    f'<span class="skill-pill match">'
-                    f'✓ {html.escape(skill)}'
+                html_text += (
+                    f'<span class="skill skill-match">'
+                    f'✓ {skill}'
                     f'</span>'
                 )
 
             st.markdown(
-                matched_html,
+                html_text,
                 unsafe_allow_html=True
             )
 
         else:
 
             st.warning(
-                "No direct skill matches were detected."
+                "No direct skill matches detected."
             )
-
-        st.markdown(
-            '</div>',
-            unsafe_allow_html=True
-        )
 
 
     with recommend_col:
 
-        st.markdown(
-            '<div class="content-card">',
-            unsafe_allow_html=True
-        )
-
-        st.markdown(
-            '<div class="card-title">💡 Recommended Skills</div>',
-            unsafe_allow_html=True
+        st.subheader(
+            "💡 Recommended Skills"
         )
 
         if recommended_skills:
 
-            recommended_html = ""
+            html_text = ""
 
             for skill in recommended_skills:
 
-                recommended_html += (
-                    f'<span class="skill-pill recommended">'
-                    f'+ {html.escape(skill)}'
+                html_text += (
+                    f'<span class="skill skill-recommend">'
+                    f'+ {skill}'
                     f'</span>'
                 )
 
             st.markdown(
-                recommended_html,
+                html_text,
                 unsafe_allow_html=True
             )
 
@@ -1794,24 +1460,13 @@ if analyze:
                 "Great! No major missing job skills detected."
             )
 
-        st.markdown(
-            '</div>',
-            unsafe_allow_html=True
-        )
 
-
-    # ========================================================
+    # =====================================================
     # SUGGESTIONS
-    # ========================================================
+    # =====================================================
 
-    st.markdown(
-        '<div class="content-card">',
-        unsafe_allow_html=True
-    )
-
-    st.markdown(
-        '<div class="card-title">✨ Smart Resume Suggestions</div>',
-        unsafe_allow_html=True
+    st.subheader(
+        "✨ Smart Resume Suggestions"
     )
 
     for suggestion in suggestions:
@@ -1819,151 +1474,100 @@ if analyze:
         st.markdown(
             f"""
             <div class="suggestion">
-                💡 {html.escape(suggestion)}
+                💡 {suggestion}
             </div>
             """,
             unsafe_allow_html=True
         )
 
-    st.markdown(
-        '</div>',
-        unsafe_allow_html=True
-    )
 
-
-    # ========================================================
+    # =====================================================
     # SCORE BREAKDOWN
-    # ========================================================
+    # =====================================================
 
-    st.markdown(
-        '<div class="content-card">',
-        unsafe_allow_html=True
-    )
-
-    st.markdown(
-        '<div class="card-title">📊 Score Breakdown</div>',
-        unsafe_allow_html=True
+    st.subheader(
+        "📊 Score Breakdown"
     )
 
     b1, b2, b3 = st.columns(3)
 
+    content_score = min(
+        100,
+        round(
+            45 + len(resume_text) / 80
+        )
+    )
+
+
     with b1:
 
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">
-                    Content Quality
-                </div>
-                <div class="metric-value">
-                    {min(100, round(45 + len(resume_text) / 80))}%
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
+        st.metric(
+            "Content Quality",
+            f"{content_score}%"
         )
 
     with b2:
 
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">
-                    Skill Relevance
-                </div>
-                <div class="metric-value">
-                    {skill_match}%
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
+        st.metric(
+            "Skill Relevance",
+            f"{skill_match}%"
         )
 
     with b3:
 
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="metric-label">
-                    Keyword Relevance
-                </div>
-                <div class="metric-value">
-                    {keyword_match}%
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
+        st.metric(
+            "Keyword Relevance",
+            f"{keyword_match}%"
         )
 
-    st.markdown(
-        '</div>',
-        unsafe_allow_html=True
-    )
 
-
-    # ========================================================
-    # CAREER PROFILES
-    # ========================================================
+    # =====================================================
+    # OTHER PROFILES
+    # =====================================================
 
     if len(profiles) > 1:
 
-        st.markdown(
-            '<div class="content-card">',
-            unsafe_allow_html=True
+        st.subheader(
+            "🚀 Other Suitable Career Profiles"
         )
-
-        st.markdown(
-            '<div class="card-title">🚀 Other Suitable Career Profiles</div>',
-            unsafe_allow_html=True
-        )
-
-        profile_html = ""
 
         for profile, score in profiles:
 
-            profile_html += f"""
-            <div class="suggestion">
-                <strong>{html.escape(profile)}</strong>
-                — {score} matching signals
-            </div>
-            """
+            st.write(
+                f"**{profile}** — {score} matching signals"
+            )
 
-        st.markdown(
-            profile_html,
-            unsafe_allow_html=True
+
+    # =====================================================
+    # OCR MESSAGE
+    # =====================================================
+
+    if used_ocr:
+
+        st.info(
+            "🔎 OCR was used because your PDF did not contain enough selectable text."
         )
 
-        st.markdown(
-            '</div>',
-            unsafe_allow_html=True
-        )
 
-
-    # ========================================================
+    # =====================================================
     # EXTRACTED TEXT
-    # ========================================================
+    # =====================================================
 
     with st.expander(
         "📄 View Extracted Resume Text"
     ):
 
         st.text_area(
-            "Extracted text",
+            "Extracted resume text",
             resume_text,
             height=350,
             label_visibility="collapsed"
         )
 
-    if used_ocr:
 
-        st.caption(
-            "🔎 OCR was used to extract text from your PDF."
-        )
-
-
-    # ========================================================
+    # =====================================================
     # DOWNLOAD REPORT
-    # ========================================================
+    # =====================================================
 
     report = f"""
 ResumeAI - Resume Analysis Report
@@ -1986,11 +1590,23 @@ Recommended Skills:
 {", ".join(recommended_skills)}
 
 Suggestions:
-{"".join(chr(10) + "- " + suggestion for suggestion in suggestions)}
-
-Generated by ResumeAI
-Multimodal RAG-Based Resume & Job Analyzer
 """
+
+    for suggestion in suggestions:
+
+        report += (
+            f"\n- {suggestion}"
+        )
+
+
+    report += """
+
+---------------------------------
+ResumeAI
+Multimodal Resume & Job Intelligence
+Analyze. Improve. Get Career-Ready.
+"""
+
 
     st.download_button(
         "📥 Download Resume Analysis Report",
@@ -2001,28 +1617,31 @@ Multimodal RAG-Based Resume & Job Analyzer
     )
 
 
-# ============================================================
+# =========================================================
 # FOOTER
-# ============================================================
+# =========================================================
 
-st.markdown("""
-<div class="footer">
+st.markdown(
+    """
+    <div class="footer">
 
-    <div class="footer-brand">
-        🚀 ResumeAI
+        <div class="footer-title">
+            🚀 ResumeAI
+        </div>
+
+        <div class="footer-text">
+            Multimodal Resume & Job Intelligence
+        </div>
+
+        <div class="footer-text">
+            Built with AI • Streamlit • Python • OCR
+        </div>
+
+        <div class="footer-highlight">
+            ✦ Analyze. Improve. Get Career-Ready. ✦
+        </div>
+
     </div>
-
-    <div class="footer-text">
-        Multimodal Resume & Job Intelligence
-    </div>
-
-    <div class="footer-text">
-        Built with AI • Streamlit • Python • OCR
-    </div>
-
-    <div class="footer-highlight">
-        ✦ Analyze. Improve. Get Career-Ready. ✦
-    </div>
-
-</div>
-""", unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True
+)
